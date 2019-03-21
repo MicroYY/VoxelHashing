@@ -109,6 +109,8 @@ HRESULT CUDARGBDAdapter::process(ID3D11DeviceContext* context)
 	cutilSafeCall(cudaMemcpy(d_colorMapRaw, m_RGBDSensor->getColorRGBX(), sizeof(unsigned int)*bufferDimColorInput, cudaMemcpyHostToDevice));
 	convertColorRawToFloat4(d_colorMapFloat4, d_colorMapRaw, m_RGBDSensor->getColorWidth(), m_RGBDSensor->getColorHeight());
 	
+
+
 	if ((m_RGBDSensor->getColorWidth() == m_width) && (m_RGBDSensor->getColorHeight() == m_height)) {
 		copyFloat4Map(d_colorMapResampledFloat4, d_colorMapFloat4, m_width, m_height);
 	} else {

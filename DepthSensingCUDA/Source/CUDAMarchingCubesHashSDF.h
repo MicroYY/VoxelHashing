@@ -42,7 +42,9 @@ public:
 	//void extractIsoSurfaceCPU(const HashData& hashData, const HashParams& hashParams, const RayCastData& rayCastData);
 
 	
-
+	const MeshDataf& getMetaDataf() const {
+		return m_meshData;
+	}
 
 private:
 	

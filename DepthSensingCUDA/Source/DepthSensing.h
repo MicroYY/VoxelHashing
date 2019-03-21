@@ -121,3 +121,4 @@ void RenderHelp();
 RGBDSensor* getRGBDSensor();
 void ResetDepthSensing();
 void StopScanningAndExtractIsoSurfaceMC(const std::string& filename = "./Scans/scan.ply", bool overwriteExistingFile = false);
+void BlendPointCloud(const std::string& filename = "pointcloudblended.png", bool overwriteExistingFile = false);

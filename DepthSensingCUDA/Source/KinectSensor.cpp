@@ -153,7 +153,7 @@ HRESULT KinectSensor::createFirstConnected()
 
 	//toggleAutoWhiteBalance();
 
-	return hr;
+	return hr;	
 }
 
 HRESULT KinectSensor::processDepth()
