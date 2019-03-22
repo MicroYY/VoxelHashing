@@ -38,6 +38,7 @@ extern "C" void convertColorToIntensityFloat(float* d_output, float4* d_input, u
 extern "C" void erodeDepthMap(float* d_output, float* d_input, int structureSize, unsigned int width, unsigned int height, float dThresh, float fracReq);
 
 extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width, unsigned int height, float minDepth, float maxDepth);
+extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation,unsigned int numTriangles,const DepthCameraData& depthCameraData,unsigned int width,unsigned int height);
 
 CUDARGBDSensor::CUDARGBDSensor()
 {
@@ -63,6 +64,7 @@ CUDARGBDSensor::CUDARGBDSensor()
 	d_colorErodeHelper = NULL;
 
 	d_depthHSV = NULL;
+	d_colorWithPointCloud = NULL;
 }
 
 CUDARGBDSensor::~CUDARGBDSensor()
@@ -86,6 +88,7 @@ void CUDARGBDSensor::OnD3D11DestroyDevice()
 	cutilSafeCall(cudaFree(d_colorErodeHelper));
 
 	cutilSafeCall(cudaFree(d_depthHSV));
+	cutilSafeCall(cudaFree(d_colorWithPointCloud));
 
 	g_RGBDRenderer.OnD3D11DestroyDevice();
 	g_CustomRenderTarget.OnD3D11DestroyDevice();
@@ -117,6 +120,7 @@ HRESULT CUDARGBDSensor::OnD3D11CreateDevice(ID3D11Device* device, CUDARGBDAdapte
 	cutilSafeCall(cudaMalloc(&d_colorErodeHelper, sizeof(float4)*bufferDimColor));
 
 	cutilSafeCall(cudaMalloc(&d_depthHSV, sizeof(float4)*bufferDimDepth));
+	cutilSafeCall(cudaMalloc(&d_colorWithPointCloud, sizeof(float4)*bufferDimDepth));
 
 	std::vector<DXGI_FORMAT> formats;
 	formats.push_back(DXGI_FORMAT_R32_FLOAT);
@@ -322,3 +326,14 @@ float4* CUDARGBDSensor::getAndComputeDepthHSV() const
 	depthToHSV(d_depthHSV, m_depthCameraData.d_depthData, getDepthWidth(), getDepthHeight(), GlobalAppState::get().s_sensorDepthMin, GlobalAppState::get().s_sensorDepthMax);
 	return d_depthHSV;
 }
+
+float4 * CUDARGBDSensor::getColorWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles) const
+{
+	cudaMemcpy(d_colorWithPointCloud, m_RGBDAdapter->getColorMapResampledFloat4(), sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
+	//colorWithPointCloud(d_colorWithPointCloud, m_depthCameraData.d_colorData, data, transformation);
+	colorWithPointCloud(d_colorWithPointCloud, data, transformation, numTriangles, m_depthCameraData,m_RGBDAdapter->getWidth(),m_RGBDAdapter->getHeight());
+	//return d_colorWithPointCloud;
+	//cudaMemcpy(d_colorWithPointCloud, d_normalMapFloat4, sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
+	return d_colorWithPointCloud;
+}
+

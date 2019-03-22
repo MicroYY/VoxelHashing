@@ -322,9 +322,12 @@ void BlendPointCloud(const std::string & filename, bool overwriteExistingFile)
 
 	ColorImageRGBA colorImage(g_RGBDAdapter.getRGBDSensor()->getDepthHeight(), g_RGBDAdapter.getRGBDSensor()->getDepthWidth(), color);
 	FreeImageWrapper::saveImage(filename, colorImage);
-
-
 }
+
+void BlendPointCloud()
+{
+}
+
 
 void ResetDepthSensing()
 {
@@ -422,7 +425,8 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool bAltDown, void* pUserCo
 			GlobalAppState::get().s_RenderMode = 6;
 			break;
 		case '7':
-			BlendPointCloud();
+			//BlendPointCloud();
+			GlobalAppState::get().s_RenderMode = 7;
 			break;
 		//GlobalAppState::get().s_RenderMode = 7;
 		break;
@@ -492,6 +496,7 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool bAltDown, void* pUserCo
 			Util::writeToImage(g_CudaDepthSensor.getDepthCameraData().d_depthData, g_CudaDepthSensor.getDepthCameraParams().m_imageWidth, g_CudaDepthSensor.getDepthCameraParams().m_imageHeight, "depth.png");
 			Util::writeToImage(g_rayCast->getRayCastData().d_depth, g_rayCast->getRayCastParams().m_width, g_rayCast->getRayCastParams().m_height, "raycast.png");
 
+			/*
 			float* depth = g_RGBDAdapter.getRGBDSensor()->getDepthFloat();
 			//unsigned char* color = (unsigned char*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
 			vec4uc* color = g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
@@ -531,8 +536,10 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool bAltDown, void* pUserCo
 				}
 				//std::cout << i << std::endl;
 			}
+
 			ColorImageRGBA colorImage(g_RGBDAdapter.getRGBDSensor()->getDepthHeight(), g_RGBDAdapter.getRGBDSensor()->getDepthWidth(), color);
 			FreeImageWrapper::saveImage("color.png", colorImage);
+			*/
 			break;
 		}
 		case 'N':
@@ -1074,6 +1081,38 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
 
+		vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
+		vec3f p(posWorld.x, posWorld.y, posWorld.z);
+		g_marchingCubesHashSDF->clearMeshBuffer();
+
+		if (!GlobalAppState::get().s_streamingEnabled) {
+			//g_chunkGrid->stopMultiThreading();
+			//g_chunkGrid->streamInToGPUAll();
+			g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
+			//g_chunkGrid->startMultiThreading();
+		}
+		else {
+			//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
+		}
+
+		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
+		unsigned int numTriangles;
+		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		//MarchingCubesData d = data.copyToCPU();
+		float3* vectices = (float3*)data.d_triangles;
+		//MarchingCubesData::Triangle* t = (MarchingCubesData::Triangle*)malloc(sizeof(MarchingCubesData::Triangle)*250000);
+		//float3* tt = (float3*)malloc(sizeof(float3) * d.d_numTriangles[0] * 6);
+		//cudaMemcpy(tt, vectices, sizeof(float3) * d.d_numTriangles[0] * 6,cudaMemcpyDeviceToHost);
+		//for (size_t i = 0; i < d.d_numTriangles; i++)
+		{
+
+		}
+		//g_CudaDepthSensor
+		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
+		//MatrixConversion::toCUDA(transformation);
+		//const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
+		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vectices,transformation,numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
+		//GlobalAppState::get().s_RenderMode == 5;
 	}
 	else if (GlobalAppState::get().s_RenderMode == 8) {
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorMapFilteredLastFrameFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());

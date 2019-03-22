@@ -203,8 +203,24 @@ void CUDAMarchingCubesHashSDF::extractIsoSurface(const HashData& hashData, const
 
 	extractIsoSurfacePass1CUDA(hashData, rayCastData, m_params, m_data);
 	extractIsoSurfacePass2CUDA(hashData, rayCastData, m_params, m_data, m_data.getNumOccupiedBlocks());
-
+	
 	copyTrianglesToCPU();
+}
+
+void CUDAMarchingCubesHashSDF::extractIsoSurfaceWithoutCopy(const HashData& hashData, const HashParams& hashParams, const RayCastData& rayCastData, const vec3f& minCorner, const vec3f& maxCorner, bool boxEnabled)
+{
+	resetMarchingCubesCUDA(m_data);
+
+	m_params.m_maxCorner = MatrixConversion::toCUDA(maxCorner);
+	m_params.m_minCorner = MatrixConversion::toCUDA(minCorner);
+	m_params.m_boxEnabled = boxEnabled;
+	m_data.updateParams(m_params);
+
+
+	//extractIsoSurfaceCUDA(hashData, rayCastData, m_params, m_data);		//OLD one-pass version (it's inefficient though)
+
+	extractIsoSurfacePass1CUDA(hashData, rayCastData, m_params, m_data);
+	extractIsoSurfacePass2CUDA(hashData, rayCastData, m_params, m_data, m_data.getNumOccupiedBlocks());
 }
 
 

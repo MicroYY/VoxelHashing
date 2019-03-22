@@ -105,7 +105,7 @@ struct DepthCameraData {
 		//pImage.y = (2.0f*pImage.y - (c_depthCameraParams.m_imageHeight-1.0f))/(c_depthCameraParams.m_imageHeight-1.0f);
 		pImage.y = ((c_depthCameraParams.m_imageHeight-1.0f) - 2.0f*pImage.y)/(c_depthCameraParams.m_imageHeight-1.0f);
 		pImage.z = cameraToKinectProjZ(pImage.z);
-
+		
 		return pImage;
 	}
 
