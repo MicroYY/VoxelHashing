@@ -329,11 +329,9 @@ float4* CUDARGBDSensor::getAndComputeDepthHSV() const
 
 float4 * CUDARGBDSensor::getColorWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles) const
 {
-	cudaMemcpy(d_colorWithPointCloud, m_RGBDAdapter->getColorMapResampledFloat4(), sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
-	//colorWithPointCloud(d_colorWithPointCloud, m_depthCameraData.d_colorData, data, transformation);
-	colorWithPointCloud(d_colorWithPointCloud, data, transformation, numTriangles, m_depthCameraData,m_RGBDAdapter->getWidth(),m_RGBDAdapter->getHeight());
-	//return d_colorWithPointCloud;
-	//cudaMemcpy(d_colorWithPointCloud, d_normalMapFloat4, sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
-	return d_colorWithPointCloud;
+	//cudaMemcpy(d_colorWithPointCloud, m_RGBDAdapter->getColorMapResampledFloat4(), sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
+	colorWithPointCloud(m_RGBDAdapter->getColorMapResampledFloat4(), data, transformation, numTriangles, m_depthCameraData,m_RGBDAdapter->getWidth(),m_RGBDAdapter->getHeight());
+	
+	return m_RGBDAdapter->getColorMapResampledFloat4();
 }
 

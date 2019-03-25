@@ -324,9 +324,6 @@ void BlendPointCloud(const std::string & filename, bool overwriteExistingFile)
 	FreeImageWrapper::saveImage(filename, colorImage);
 }
 
-void BlendPointCloud()
-{
-}
 
 
 void ResetDepthSensing()
@@ -1080,10 +1077,11 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_rayCast->getRayCastData().d_depth4DV, 4, g_rayCast->getRayCastParams().m_width, g_rayCast->getRayCastParams().m_height, 500.0f);	
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
+		Timer t;
 
 		vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
 		vec3f p(posWorld.x, posWorld.y, posWorld.z);
-		g_marchingCubesHashSDF->clearMeshBuffer();
+		//g_marchingCubesHashSDF->clearMeshBuffer();
 
 		if (!GlobalAppState::get().s_streamingEnabled) {
 			//g_chunkGrid->stopMultiThreading();
@@ -1108,12 +1106,17 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 
 		}
 		//g_CudaDepthSensor
+		//std::cout << numTriangles << std::endl;
 		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
+		//std::cout << transformation.m11<<" "<<transformation.m12<<" "<<transformation.m13<<" "<<transformation.m14 << std::endl;
 		//MatrixConversion::toCUDA(transformation);
 		//const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vectices,transformation,numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
+		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vectices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 		//GlobalAppState::get().s_RenderMode == 5;
-	}
+		g_marchingCubesHashSDF->clearMeshBuffer();
+		std::cout << t.getElapsedTime() << "seconds" << std::endl;
+
+		}
 	else if (GlobalAppState::get().s_RenderMode == 8) {
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorMapFilteredLastFrameFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 	}
@@ -1358,11 +1361,11 @@ int main(int argc, char** argv)
 		bool bShowMsgBoxOnError = false;
 		DXUTInit(true, bShowMsgBoxOnError); // Parse the command line, show msgboxes on error, and an extra cmd line param to force REF for now
 		DXUTSetCursorSettings(true, true); // Show the cursor and clip it when in full screen
-		DXUTCreateWindow(GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight, L"VoxelHashing", false);
+		DXUTCreateWindow(GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight, L"Visualization", false);
 
 		DXUTSetIsInGammaCorrectMode(false);	//gamma fix (for kinect)
 
-		DXUTCreateDevice(D3D_FEATURE_LEVEL_11_0, true, GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight);
+		DXUTCreateDevice(D3D_FEATURE_LEVEL_11_0 , true, GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight);
 		DXUTMainLoop(); // Enter into the DXUT render loop
 
 	}

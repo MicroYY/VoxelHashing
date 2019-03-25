@@ -1768,7 +1768,7 @@ extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width,
 #endif
 }
 
-__global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_input, const float4x4& transformationInv, unsigned int numTriangles, const DepthCameraData& depthCameraData,unsigned int width,unsigned int height) {
+__global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_input, const float4x4& transformationInv, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
 	const int x = blockIdx.x*blockDim.x + threadIdx.x;
 	const int y = blockIdx.y*blockDim.y + threadIdx.y;
 
@@ -1776,7 +1776,7 @@ __global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_inpu
 		//printf("%f", transformation.m12);
 		//float4x4 transInv = transformation.getInverse();
 		float3 pCamera = transformationInv * d_input[6 * y + 2 * x];
-		uint2 pixel = depthCameraData.cameraToKinectScreen(pCamera);
+		int2 pixel = depthCameraData.cameraToKinectScreenInt(pCamera);
 		unsigned int index = pixel.y * width + pixel.x;
 		if (x == 0 && y == 0)
 		{
@@ -1788,21 +1788,28 @@ __global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_inpu
 			//printf("%f %f %f ", pCamera.x, pCamera.y, pCamera.z);
 			//printf("%u %u    ", pixel.x, pixel.y);
 		}
-
-		if (index >= width * height)
+		if (pixel.x >= width || pixel.x <= 0)
 			return;
+		if (pixel.y >= height || pixel.y <= 0)
+			return;
+		if (index >= width * height)
+		{
+			//printf("g\n");
+			return;
+		}
+
 		//printf("g/n");
 		d_output[index].x = 0;
 		//printf("%f\n", transformation.m11);
 		d_output[index].y = 0;
 		//printf("%f\n", d_output[index].y);
-		d_output[index].z = 0;
+		d_output[index].z = abs(d_input[6 * y + 2 * x].z - 0.4) / 3.6 * 1.0;
 		//printf("%f\n", d_output[index].z);
 		d_output[index].w = 1.0f;
 	}
 }
 
-extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData,unsigned int width,unsigned int height) {
+extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
 	const dim3 gridSize((3 + T_PER_BLOCK - 1) / T_PER_BLOCK, (numTriangles + T_PER_BLOCK - 1) / T_PER_BLOCK);
 	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
 
@@ -1812,7 +1819,7 @@ extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, con
 	cudaMemcpy(t, &transInv, sizeof(float4x4), cudaMemcpyHostToDevice);
 
 
-	colorWithPointCloudDevice << <gridSize, blockSize >> > (d_output, d_input, *t, numTriangles, depthCameraData,width,height);
+	colorWithPointCloudDevice << <gridSize, blockSize >> > (d_output, d_input, *t, numTriangles, depthCameraData, width, height);
 
 #ifdef _DEBUG
 	cutilSafeCall(cudaDeviceSynchronize());
