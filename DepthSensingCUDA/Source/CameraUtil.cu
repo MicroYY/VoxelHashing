@@ -176,7 +176,7 @@ __global__ void convertColorFloat4ToUCHAR4Device(uchar4* d_output, float4* d_inp
 	if (x >= width || y >= height) return;
 
 	float4 color = d_input[y*width + x];
-	d_output[y*width + x] = make_uchar4(color.x*255.0f, color.y*255.0f, color.z*255.0f, color.w*255.0f);
+	d_output[y*width + x] = make_uchar4(color.z*255.0f, color.x*255.0f, color.y*255.0f, color.w*255.0f);
 }
 
 extern "C" void convertColorFloat4ToUCHAR4(uchar4* d_output, float4* d_input, unsigned int width, unsigned int height)
@@ -1769,57 +1769,88 @@ extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width,
 }
 
 __global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_input, const float4x4& transformationInv, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
-	const int x = blockIdx.x*blockDim.x + threadIdx.x;
-	const int y = blockIdx.y*blockDim.y + threadIdx.y;
+	//const int x = blockIdx.x*blockDim.x + threadIdx.x;
+	//const int y = blockIdx.y*blockDim.y + threadIdx.y;
+	int i = blockDim.x * blockIdx.x + threadIdx.x;
+	//if (x >= 0 && x < 3 && y >= 0 && y < numTriangles) {
+	float3 pCamera = transformationInv * d_input[i * 6];
+	if (pCamera.z >= 4 || pCamera.z <= 0.4)
+		return;
+	int2 pixel = depthCameraData.cameraToKinectScreenInt(pCamera);
 
-	if (x >= 0 && x < 3 && y >= 0 && y < numTriangles) {
-		//printf("%f", transformation.m12);
-		//float4x4 transInv = transformation.getInverse();
-		float3 pCamera = transformationInv * d_input[6 * y + 2 * x];
-		int2 pixel = depthCameraData.cameraToKinectScreenInt(pCamera);
-		unsigned int index = pixel.y * width + pixel.x;
-		if (x == 0 && y == 0)
-		{
-			//printf("%f %f %f %f \n", transformationInv.m11, transformationInv.m12, transformationInv.m13, transformationInv.m14);
-			//printf("%f %f %f %f \n", transformationInv.m21, transformationInv.m22, transformationInv.m23, transformationInv.m24);
-			//printf("%f %f %f %f \n", transformationInv.m31, transformationInv.m32, transformationInv.m33, transformationInv.m34);
-			//printf("%f %f %f %f \n\n", transformationInv.m41, transformationInv.m42, transformationInv.m43, transformationInv.m44);
-			//printf("%f %f %f ", d_input[6 * y + 2 * x].x, d_input[6 * y + 2 * x].y, d_input[6 * y + 2 * x].z);
-			//printf("%f %f %f ", pCamera.x, pCamera.y, pCamera.z);
-			//printf("%u %u    ", pixel.x, pixel.y);
-		}
-		if (pixel.x >= width || pixel.x <= 0)
-			return;
-		if (pixel.y >= height || pixel.y <= 0)
-			return;
-		if (index >= width * height)
-		{
-			//printf("g\n");
-			return;
-		}
-
-		//printf("g/n");
+	if (pixel.x >= width || pixel.x <= 0)
+		return;
+	if (pixel.y >= height || pixel.y <= 0)
+		return;
+	int index = pixel.y * width + pixel.x;
+	if (index >= width * height)
+		return;
+	//printf("%d", mark[index]);
+	//if (mark[index] == 0)
+	//{
+		//mark[index] = 1;
+		float f = (pCamera.z - 0.4) / 3.6 * 1.0;
+		//d_output[index].z = d_output[index].z * f + (1.0 - f) * 1.0f;
 		d_output[index].x = 0;
-		//printf("%f\n", transformation.m11);
 		d_output[index].y = 0;
-		//printf("%f\n", d_output[index].y);
-		d_output[index].z = abs(d_input[6 * y + 2 * x].z - 0.4) / 3.6 * 1.0;
-		//printf("%f\n", d_output[index].z);
-		d_output[index].w = 1.0f;
-	}
+		d_output[index].z = 1.0 - f;
+		//mark[index] = pCamera.z;
+	//}
+
+	//d_output[index].x = 0;
+
+	//d_output[index].y = 0;
+
+	//d_output[index].w = 1.0f;
+//}
 }
 
+
+
 extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
-	const dim3 gridSize((3 + T_PER_BLOCK - 1) / T_PER_BLOCK, (numTriangles + T_PER_BLOCK - 1) / T_PER_BLOCK);
-	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
+	const int blockSize = 512;
+	const int gridSize = (numTriangles + blockSize - 1) / blockSize;
 
 	float4x4 transInv = transformation.getInverse();
 	float4x4* t;
 	cudaMalloc(&t, sizeof(float4x4) * 1);
 	cudaMemcpy(t, &transInv, sizeof(float4x4), cudaMemcpyHostToDevice);
 
-
 	colorWithPointCloudDevice << <gridSize, blockSize >> > (d_output, d_input, *t, numTriangles, depthCameraData, width, height);
+
+#ifdef _DEBUG
+	cutilSafeCall(cudaDeviceSynchronize());
+	cutilCheckMsg(__FUNCTION__);
+#endif
+}
+
+__global__ void colorWithPointCloudRayCastDevice(float4* d_output, float4* d_input, unsigned int width, unsigned int height) {
+	const int x = blockIdx.x*blockDim.x + threadIdx.x;
+	const int y = blockIdx.y*blockDim.y + threadIdx.y;
+
+	if (x >= 0 && x < width && y >= 0 && y < height) {
+		unsigned int index = y * width + x;
+		if (x % 3 != 0)
+			return;
+		if (y % 3 != 0)
+			return;
+
+		float depth = d_input[index].z;
+		if (depth > 4.0f || depth < 0.4f)
+			return;
+
+		float f = (depth - 0.4) / 3.6 * 1.0;
+		d_output[index].x = 0;
+		d_output[index].y = 0;
+		d_output[index].z = 1.0 - f;
+	}
+
+}
+
+extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, unsigned int width, unsigned int height) {
+	const dim3 gridSize((width + T_PER_BLOCK - 1) / T_PER_BLOCK, (height + T_PER_BLOCK - 1) / T_PER_BLOCK);
+	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
+	colorWithPointCloudRayCastDevice << <gridSize, blockSize >> > (d_output, d_input, width, height);
 
 #ifdef _DEBUG
 	cutilSafeCall(cudaDeviceSynchronize());

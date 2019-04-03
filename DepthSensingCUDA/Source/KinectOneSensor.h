@@ -1,4 +1,4 @@
-#pragma once
+	#pragma once
 
 //Only working with Kinect 2.0 SDK (which wants to run on Win8)
 

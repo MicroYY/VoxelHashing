@@ -114,6 +114,11 @@ class CUDARGBDAdapter
 			m_RGBDSensor->saveRecordedPointCloud(filename);
 		}
 
+		/*BYTE* getColorMapRaw() const
+		{
+			return d_colorMapRaw;
+		}*/
+
 	private:
 		
 		RGBDSensor*		m_RGBDSensor;

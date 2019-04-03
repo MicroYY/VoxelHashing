@@ -1723,7 +1723,7 @@ LRESULT CALLBACK DXUTStaticWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 HRESULT WINAPI DXUTMainLoop( HACCEL hAccel )
 {
     HRESULT hr;
-
+	
     // Not allowed to call this from inside the device callbacks or reenter
     if( GetDXUTState().GetInsideDeviceCallback() || GetDXUTState().GetInsideMainloop() )
     {

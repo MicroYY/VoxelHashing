@@ -119,7 +119,8 @@ public:
 		Sensor_IntelSensor = 5,
 		Sensor_RealSense = 6,
 		Sensor_StructureSensor = 7,
-		Sensor_SensorDataReader = 8
+		Sensor_SensorDataReader = 8,
+		Sensor_PythonSensor = 9
 	};
 
 #define X(type, name) type name;

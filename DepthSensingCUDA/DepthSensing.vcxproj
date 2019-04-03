@@ -37,6 +37,10 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\Props\opencv-3.2.0-release.props" />
+    <Import Project="..\..\..\Props\SDL.props" />
+    <Import Project="..\..\..\Props\OVR.props" />
+    <Import Project="..\..\..\Props\glew-1.12.0.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -51,7 +55,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <ExecutablePath>$(DXSDK_DIR)Utilities\bin\x64;$(DXSDK_DIR)Utilities\bin\x86;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(IncludePath);$(WindowsSDK_IncludePath);$(KINECTSDK10_DIR)\inc;$(KINECTSDK20_DIR)\inc;$(OPENNI2_INCLUDE64);$(DXSDK_DIR)Include;./Source/;./Include;./Include/Intel;./Include/cutil/inc;./Include/Uplink</IncludePath>
+    <IncludePath>$(IncludePath);$(WindowsSDK_IncludePath);$(KINECTSDK10_DIR)\inc;$(KINECTSDK20_DIR)\inc;$(OPENNI2_INCLUDE64);$(DXSDK_DIR)Include;./Source/;./Include;./Include/Intel;./Include/cutil/inc;./Include/Uplink;D:\Anaconda3\include</IncludePath>
     <LibraryPath>$(LibraryPath);$(DXSDK_DIR)Lib\x64;$(KINECTSDK10_DIR)\lib\amd64;$(CUDA_LIB_PATH);$(KINECTSDK20_DIR)\lib\x64;$(OPENNI2_LIB64);Libs</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -98,7 +102,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VR_DISPLAY;WIN32;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>Source\DXUT\Optional;Source\DXUT\Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
@@ -130,6 +134,7 @@
     <None Include="Shaders\QuadDrawer.hlsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PythonSensor.cpp" />
     <ClCompile Include="Source\BinaryDumpReader.cpp" />
     <ClCompile Include="Source\CUDABuildLinearSystem.cpp" />
     <ClCompile Include="Source\CUDABuildLinearSystemRGBD.cpp" />
@@ -204,6 +209,7 @@
     <ClCompile Include="Source\RealSenseSensor.cpp" />
     <ClCompile Include="Source\RGBDSensor.cpp" />
     <ClCompile Include="Source\SensorDataReader.cpp" />
+    <ClCompile Include="Source\Shader.cpp" />
     <ClCompile Include="Source\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -213,6 +219,7 @@
     <ClCompile Include="Source\TimingLog.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PythonSensor.h" />
     <ClInclude Include="Source\BinaryDumpReader.h" />
     <ClInclude Include="Source\CameraParams.h" />
     <ClInclude Include="Source\CameraTrackingInput.h" />
@@ -270,6 +277,7 @@
     <ClInclude Include="Source\Resource.h" />
     <ClInclude Include="Source\RGBDSensor.h" />
     <ClInclude Include="Source\SensorDataReader.h" />
+    <ClInclude Include="Source\Shader.hpp" />
     <ClInclude Include="Source\stdafx.h" />
     <ClInclude Include="Source\StdOutputLogger.h" />
     <ClInclude Include="Source\StructureSensor.h" />

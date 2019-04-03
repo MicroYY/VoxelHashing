@@ -6,3 +6,4 @@
 #include <windows.h>
 #include <DXUT.h>
 #include "mlib.h"
+#include <GL/glew.h>
