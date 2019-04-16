@@ -7,6 +7,7 @@
 //#define INTEL_SENSOR
 //#define REAL_SENSE
 //#define STRUCTURE_SENSOR
+//#define TCP_Sensor
 #define SENSOR_DATA_READER
 
 //#define OBJECT_SENSING
@@ -120,7 +121,7 @@ public:
 		Sensor_RealSense = 6,
 		Sensor_StructureSensor = 7,
 		Sensor_SensorDataReader = 8,
-		Sensor_PythonSensor = 9
+		Sensor_TCPSensor = 9
 	};
 
 #define X(type, name) type name;

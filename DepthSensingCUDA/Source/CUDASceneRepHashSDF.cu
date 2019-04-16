@@ -412,7 +412,7 @@ inline __device__ float4 bilinearFilterColor(const float2& screenPos) {
 __global__ void integrateDepthMapKernel(HashData hashData, DepthCameraData cameraData) {
 	const HashParams& hashParams = c_hashParams;
 	const DepthCameraParams& cameraParams = c_depthCameraParams;
-
+	
 	//TODO check if we should load this in shared memory
 	const HashEntry& entry = hashData.d_hashCompactified[blockIdx.x];
 	//if (entry.ptr == FREE_ENTRY) {

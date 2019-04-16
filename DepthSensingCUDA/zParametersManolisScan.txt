@@ -1,4 +1,4 @@
-// 0=Kinect; 1=PrimeSense; 2=KinectOne; 3=BinaryDumpReader; 4=NetworkSensor; 5=IntelSensor; 6=RealSense; 7=StructureSensor; 8=SensorDataReader
+// 0=Kinect; 1=PrimeSense; 2=KinectOne; 3=BinaryDumpReader; 4=NetworkSensor; 5=IntelSensor; 6=RealSense; 7=StructureSensor; 8=SensorDataReader; 9=TCPSensor
 s_sensorIdx = 0;
 
 //s_windowWidth = 1280;		//render window width
@@ -51,7 +51,7 @@ s_binaryDumpSensorUseTrajectoryOnlyInit = false;	//only valid if prev is true; p
 // filtering
 s_depthSigmaD = 2.0f;	//bilateral filter sigma domain
 s_depthSigmaR = 0.1f;	//bilateral filter sigma range
-s_depthFilter = false;	//bilateral filter enabled depth
+s_depthFilter = true;	//bilateral filter enabled depth
 
 s_colorSigmaD = 1.0f;	//bilateral filter sigma domain
 s_colorSigmaR = 0.08f;	//bilateral filter sigma range

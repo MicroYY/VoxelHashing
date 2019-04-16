@@ -71,7 +71,7 @@ RGBDSensor::~RGBDSensor()
 		SAFE_DELETE_ARRAY(m_depthFloat[i]);
 	}
 	m_depthFloat.clear();
-
+	printf("12r41");
 	reset();
 }
 

@@ -161,7 +161,7 @@ HRESULT KinectSensor::processDepth()
 	HRESULT hr = S_OK;
 
 	//wait until data is available
-	if (!(WAIT_OBJECT_0 == WaitForSingleObject(m_hNextDepthFrameEvent, 0)))	return S_FALSE;
+	if (!(WAIT_OBJECT_0 == WaitForSingleObject	(m_hNextDepthFrameEvent, 0)))	return S_FALSE;
 
 	// This code allows to get depth up to 8m
 	BOOL bNearMode = false;

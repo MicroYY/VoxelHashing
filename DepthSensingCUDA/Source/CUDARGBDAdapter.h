@@ -76,6 +76,7 @@ class CUDARGBDAdapter
 			return m_frameNumber;
 		}
 
+
 		RGBDSensor* getRGBDSensor() {
 			return m_RGBDSensor;
 		}

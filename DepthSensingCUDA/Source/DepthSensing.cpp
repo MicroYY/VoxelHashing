@@ -81,13 +81,14 @@ RGBDSensor* getRGBDSensor()
 	static RGBDSensor* g_sensor = NULL;
 	if (g_sensor != NULL)	return g_sensor;
 
-	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_PythonSensor)
+
+	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_TCPSensor)
 	{
-#ifdef Python_Sensor
-		g_sensor = new PythonSensor;
+#ifdef TCP_Sensor
+		g_sensor = new TCPSensor;
 		return g_sensor;
 #else
-		throw MLIB_EXCEPTION("Requires Python library and enable PYTHON macro");
+		throw MLIB_EXCEPTION("Requires TCP connection and enable TCP macro");
 #endif
 	}
 
@@ -740,8 +741,11 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 
 	//std::cout << "waiting..." << std::endl;
 	//getchar();
+
 	return hr;
 }
+
+
 
 //--------------------------------------------------------------------------------------
 // Release D3D11 resources created in OnD3D10CreateDevice 
@@ -811,7 +815,7 @@ void CALLBACK OnD3D11ReleasingSwapChain(void* pUserContext)
 	g_DialogResourceManager.OnD3D11ReleasingSwapChain();
 }
 
-std::mutex mtx;
+
 
 void __extractPointCloud__()
 {
@@ -819,13 +823,13 @@ void __extractPointCloud__()
 		//if (!GlobalAppState::get().s_streamingEnabled) {
 			//g_chunkGrid->stopMultiThreading();
 			//g_chunkGrid->streamInToGPUAll();
-			g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-			//g_chunkGrid->startMultiThreading();
-		//}
-		//else {
-			//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-		//}
-		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
+		g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
+		//g_chunkGrid->startMultiThreading();
+	//}
+	//else {
+		//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
+	//}
+	//std::cout << t.getElapsedTime() << "seconds" << std::endl;
 		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
 		unsigned int numTriangles;
 		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
@@ -844,6 +848,7 @@ void __extractPointCloud__()
 
 void reconstruction()
 {
+
 
 	//only if binary dump
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_BinaryDumpReader || GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_SensorDataReader) {
@@ -1028,6 +1033,18 @@ void reconstruction()
 
 void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext)
 {
+#ifdef TCP_Sensor
+	TCPSensor* sensor = (TCPSensor*)getRGBDSensor();
+	if (!sensor->isStart())
+	{
+		//g_RGBDAdapter.reset();
+		return;
+	}
+
+#endif // TCP_Sensor
+
+
+
 	//g_historgram->computeHistrogram(g_sceneRep->getHashData(), g_sceneRep->getHashParams());
 
 	// If the settings dialog is being shown, then render it instead of rendering the app's scene
@@ -1114,24 +1131,24 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 1)
 	{
-		//if (!GlobalAppState::get().s_streamingEnabled) {
-			//g_chunkGrid->stopMultiThreading();
-			//g_chunkGrid->streamInToGPUAll();
-			g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-			//g_chunkGrid->startMultiThreading();
-		//}
-		//else {
-			//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-		//}
-		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
-		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
-		unsigned int numTriangles;
-		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		//MarchingCubesData d = data.copyToCPU();
-		float3* vertices = (float3*)data.d_triangles;
+		////if (!GlobalAppState::get().s_streamingEnabled) {
+		//	//g_chunkGrid->stopMultiThreading();
+		//	//g_chunkGrid->streamInToGPUAll();
+		//	g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
+		//	//g_chunkGrid->startMultiThreading();
+		////}
+		////else {
+		//	//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
+		////}
+		////std::cout << t.getElapsedTime() << "seconds" << std::endl;
+		//const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
+		//unsigned int numTriangles;
+		//cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		////MarchingCubesData d = data.copyToCPU();
+		//float3* vertices = (float3*)data.d_triangles;
 
-		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles);
+		//const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
+		//g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles);
 
 		//default render mode
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
@@ -1153,9 +1170,9 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 				((StructureSensor*)getRGBDSensor())->updateFeedbackImage((BYTE*)tex);
 				SAFE_DELETE_ARRAY(tex);
 			}
-	}
+		}
 #endif
-}
+	}
 	else if (GlobalAppState::get().s_RenderMode == 2) {
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getCameraSpacePositionsFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getAndComputeDepthHSV(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
@@ -1193,7 +1210,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		//vec3f p(posWorld.x, posWorld.y, posWorld.z);
 		//g_marchingCubesHashSDF->clearMeshBuffer();
 
-		
+
 		if (!GlobalAppState::get().s_streamingEnabled) {
 			//g_chunkGrid->stopMultiThreading();
 			//g_chunkGrid->streamInToGPUAll();
@@ -1211,9 +1228,9 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		float3* vertices = (float3*)data.d_triangles;
 
 		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		
+
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloudFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices,transformation,numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
+		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 
 		//g_marchingCubesHashSDF->clearMeshBuffer();
 		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
@@ -1661,7 +1678,7 @@ void __VR_runner()
 				cudaArray_t arrIm;
 
 
-				
+
 
 				cudaGraphicsSubResourceGetMappedArray(&arrIm, cimg_l, 0, 0);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, thread_data.zed_image[ovrEye_Left].getPtr<sl::uchar1>(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getStepBytes(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getWidth() * 4, thread_data.zed_image[ovrEye_Left].getHeight(), cudaMemcpyDeviceToDevice);
@@ -1773,6 +1790,19 @@ void __VR_runner()
 	}
 }
 
+#ifdef TCP_Sensor
+void __cap(TCPSensor* sensor)
+{
+	sensor->startThread();
+	while (1)
+	{
+		sensor->imgStreamCap();
+	}
+}
+#endif // TCP_Sensor
+
+
+
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
@@ -1878,13 +1908,17 @@ int main(int argc, char** argv)
 		DXUTSetIsInGammaCorrectMode(false);	//gamma fix (for kinect)
 
 		DXUTCreateDevice(D3D_FEATURE_LEVEL_11_0, true, GlobalAppState::get().s_windowWidth, GlobalAppState::get().s_windowHeight);
-		
-		
+
+#ifdef TCP_Sensor
+		std::thread cap(__cap, (TCPSensor*)getRGBDSensor());
+#endif // TCP_Sensor
+
+
 #ifdef VR_DISPLAY
 		std::thread runner(__VR_runner);
 #endif // VR
 
-		
+
 		//std::thread runner2(__extractPointCloud__);
 		//runner2.join();
 		DXUTMainLoop(); // Enter into the DXUT render loop

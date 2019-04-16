@@ -168,7 +168,7 @@
       <Filter>Sensors</Filter>
     </ClCompile>
     <ClCompile Include="Source\Shader.cpp" />
-    <ClCompile Include="PythonSensor.cpp">
+    <ClCompile Include="Source\TCPSensor.cpp">
       <Filter>Sensors</Filter>
     </ClCompile>
   </ItemGroup>
@@ -338,7 +338,7 @@
       <Filter>CUDA</Filter>
     </ClInclude>
     <ClInclude Include="Source\Shader.hpp" />
-    <ClInclude Include="PythonSensor.h">
+    <ClInclude Include="Source\TCPSensor.h">
       <Filter>Sensors</Filter>
     </ClInclude>
   </ItemGroup>

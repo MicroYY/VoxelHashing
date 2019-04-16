@@ -38,7 +38,7 @@ extern "C" void convertColorToIntensityFloat(float* d_output, float4* d_input, u
 extern "C" void erodeDepthMap(float* d_output, float* d_input, int structureSize, unsigned int width, unsigned int height, float dThresh, float fracReq);
 
 extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width, unsigned int height, float minDepth, float maxDepth);
-extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation,unsigned int numTriangles,const DepthCameraData& depthCameraData,unsigned int width,unsigned int height);
+extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height);
 extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, unsigned int width, unsigned int height);
 
 CUDARGBDSensor::CUDARGBDSensor()
@@ -71,7 +71,7 @@ CUDARGBDSensor::CUDARGBDSensor()
 
 CUDARGBDSensor::~CUDARGBDSensor()
 {
-	
+
 }
 
 void CUDARGBDSensor::OnD3D11DestroyDevice()
@@ -177,6 +177,17 @@ HRESULT CUDARGBDSensor::process(ID3D11DeviceContext* context)
 
 	if (m_bFilterDepthValues) gaussFilterFloatMap(d_depthMapFilteredFloat, m_RGBDAdapter->getDepthMapResampledFloat(), m_fBilateralFilterSigmaD, m_fBilateralFilterSigmaR, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 	else					 copyFloatMap(d_depthMapFilteredFloat, m_RGBDAdapter->getDepthMapResampledFloat(), m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
+
+	//float* h_depth = (float*)malloc(sizeof(float) * 640 * 480);
+	//cudaMemcpy(h_depth, d_depthMapFilteredFloat, sizeof(float) * 640 * 480, cudaMemcpyDeviceToHost);
+	//unsigned int count = 0;
+	//for (size_t i = 0; i < 640 * 480; i++)
+	//{
+	//	if (h_depth[i] > 0)
+	//		count++;
+	//	//std::cout << i << " " << h_depth[i] << std::endl;
+	//}
+	//std::cout << "count" << count;
 
 	//TODO this call seems not needed as the depth map is overwriten later anyway later anyway...
 	setInvalidFloatMap(m_depthCameraData.d_depthData, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
@@ -334,7 +345,7 @@ float4* CUDARGBDSensor::getAndComputeDepthHSV() const
 float4 * CUDARGBDSensor::getColorWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles) const
 {
 	//cudaMemcpy(d_colorWithPointCloud, m_RGBDAdapter->getColorMapResampledFloat4(), sizeof(float4)* m_RGBDAdapter->getWidth() * m_RGBDAdapter->getHeight(), cudaMemcpyDeviceToDevice);
-	colorWithPointCloud(m_RGBDAdapter->getColorMapResampledFloat4(), data, transformation, numTriangles, m_depthCameraData,m_RGBDAdapter->getWidth(),m_RGBDAdapter->getHeight());
+	colorWithPointCloud(m_RGBDAdapter->getColorMapResampledFloat4(), data, transformation, numTriangles, m_depthCameraData, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 	convertColorFloat4ToUCHAR4(d_colorWithPointCloudUchar4, m_RGBDAdapter->getColorMapResampledFloat4(), m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 	return m_RGBDAdapter->getColorMapResampledFloat4();
 }
@@ -342,11 +353,11 @@ float4 * CUDARGBDSensor::getColorWithPointCloud(float3* data, const float4x4& tr
 float4 * CUDARGBDSensor::getColorWithPointCloud(float4 * depth) const
 {
 	colorWithPointCloudRayCast(m_RGBDAdapter->getColorMapResampledFloat4(), depth, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
-	
+
 	return m_RGBDAdapter->getColorMapResampledFloat4();
 }
 
-void CUDARGBDSensor::generateMapWithPointCloud(float3* data,const float4x4& transformation,const unsigned int numTriangles)
+void CUDARGBDSensor::generateMapWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles)
 {
 	copyFloat4Map(d_colorWithPointCloudFloat4, m_depthCameraData.d_colorData, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 	colorWithPointCloud(d_colorWithPointCloudFloat4, data, transformation, numTriangles, m_depthCameraData, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
