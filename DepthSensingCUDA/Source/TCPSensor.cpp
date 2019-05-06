@@ -32,6 +32,7 @@ TCPSensor::TCPSensor()
 	frameNum = 0;
 	start = false;
 	image = cv::Mat(960, 640, CV_8UC3);
+	recvPose = (char*)malloc(sizeof(unsigned char) * 28);
 }
 
 TCPSensor::~TCPSensor()
@@ -92,9 +93,10 @@ HRESULT TCPSensor::createFirstConnected()
 
 HRESULT TCPSensor::processDepth()
 {
-	if (frameNum <= 10)
+
+	if (frameNum <= 20)
 		return S_FALSE;
-	//mtx.lock();
+	////mtx.lock();
 	float* depth = getDepthFloat();
 	int count = 0;
 	//int c = 0;
@@ -105,7 +107,8 @@ HRESULT TCPSensor::processDepth()
 	//}
 	//std::cout << "c = " << c << std::endl;
 
-	for (size_t i = 0; i < depthHeight; i++)
+//#pragma omp parallel for num_threads(4)
+	for (int i = 0; i < depthHeight; i++)
 	{
 		for (size_t j = 0; j < depthWidth; j++)
 		{
@@ -123,7 +126,7 @@ HRESULT TCPSensor::processDepth()
 				depth[index] = -std::numeric_limits<float>::infinity();
 			else {
 				depth[index] = (float)d * 0.001f;
-				
+			
 				//count++;
 			}
 
@@ -132,15 +135,18 @@ HRESULT TCPSensor::processDepth()
 
 	//mtx.unlock();
 	//std::cout << "有效深度" << count << std::endl;
+
+
 	return S_OK;
 }
 
 HRESULT TCPSensor::processColor()
 {
-	if (frameNum <= 1)
-		return S_FALSE;
+	/*if (frameNum <= 1)
+		return S_FALSE;*/
 	//mtx.lock();
-	for (size_t i = 0; i < colorHeight; i++)
+//#pragma omp parallel for num_threads(4)
+	for (int i = 0; i < colorHeight; i++)
 	{
 		for (size_t j = 0; j < colorWidth; j++)
 		{
@@ -164,6 +170,50 @@ void TCPSensor::imgStreamCap()
 		iRet += recv(clientSocket, &recvImg[iRet], bufSize - iRet, 0);
 	}
 	//std::cout << " grg"<<(int)recvImg[720 * 640 * 3 + 320 * 3];
+
+	iRet = recv(clientSocket, recvPose, 28, 0);
+	while (iRet != 28)
+	{
+		iRet += recv(clientSocket, recvPose, 28 - iRet, 0);
+	}
+	RT = (float*)recvPose;
+	
+	//std::cout << RT[0] << " " << RT[1] << " " << RT[2] << " " << RT[3] << std::endl;
+	/*float x = -RT[0];
+	float y = -RT[3];
+	float z = RT[2];
+	float w = RT[1];*/
+	/*float x = -RT[0];
+	float y = RT[3];
+	float z = RT[2];
+	float w = -RT[1];*/
+	float q0 = RT[3];
+	float q1 = RT[0];
+	float q2 = RT[1];
+	float q3 = RT[2];
+
+	m_rigidTransform._m00 = 1  - 2 * q2 * q2 - 2 * q3 * q3;
+	m_rigidTransform._m01 = 2 * q1 * q2 - 2 * q0 * q3;
+	m_rigidTransform._m02 = 2 * q1 * q3 + 2 * q0 * q2;
+	m_rigidTransform._m03 = RT[4];
+
+	m_rigidTransform._m10 = 2 * q1 * q2 + 2 * q0 * q3;
+	m_rigidTransform._m11 = 1 - 2 * q1 * q1 - 2 * q3 * q3;
+	m_rigidTransform._m12 = 2 * q2 * q3 - 2 * q0 * q1;
+	m_rigidTransform._m13 = RT[5];
+
+	m_rigidTransform._m20 = 2 * q1 * q3 - 2 * q0 * q2;
+	m_rigidTransform._m21 = 2 * q2 * q3 + 2 * q0 * q1;
+	m_rigidTransform._m22 = 1 - 2 * q1 * q1 - 2 * q2 * q2;
+	m_rigidTransform._m23 = RT[6];
+
+	m_rigidTransform._m30 = 0;
+	m_rigidTransform._m31 = 0;
+	m_rigidTransform._m32 = 0;
+	m_rigidTransform._m33 = 1;
+
+	//std::cout << m_rigidTransform << std::endl;
+
 	
 	image.data = (uchar*)recvImg;
 	cv::imshow("", image);
@@ -184,8 +234,15 @@ void TCPSensor::imgStreamCap()
 	}
 	std::cout << "gregw" << count << std::endl;*/
 	//mtx.unlock();
-	printf("接受到图片\n");
+	printf("接收到图片\n");
 	printf("Frame: %u\n\n", ++frameNum);
+	//Sleep(25);
+}
+
+void TCPSensor::quaternion2Mat(float * quaternion)
+{
+
+	
 }
 
 

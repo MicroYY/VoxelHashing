@@ -2,7 +2,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "GlobalAppState.h"
-
+#include "MatrixConversion.h"
 
 #ifdef TCP_Sensor
 
@@ -44,8 +44,18 @@ public:
 		return frameNum;
 	}
 
+	float* getQuanternion()
+	{
+		return RT;
+	}
+
+	mat4f getRigidTransform()
+	{
+		return m_rigidTransform;
+	}
+
 private:
-	
+	void quaternion2Mat(float* quaternion);
 
 	//void recvImg(unsigned int bufSize);
 
@@ -67,6 +77,12 @@ private:
 	std::mutex mtx;
 
 	cv::Mat image;
+
+	mat4f				m_rigidTransform;
+	float* RT;
+	char* recvPose;
+
+	float initPose[7];
 };
 
 

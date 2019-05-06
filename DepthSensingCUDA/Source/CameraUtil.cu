@@ -1830,10 +1830,10 @@ __global__ void colorWithPointCloudRayCastDevice(float4* d_output, float4* d_inp
 
 	if (x >= 0 && x < width && y >= 0 && y < height) {
 		unsigned int index = y * width + x;
-		if (x % 3 != 0)
-			return;
-		if (y % 3 != 0)
-			return;
+		//if (x % 3 != 0)
+		//	return;
+		//if (y % 3 != 0)
+		//	return;
 
 		float depth = d_input[index].z;
 		if (depth > 4.0f || depth < 0.4f)

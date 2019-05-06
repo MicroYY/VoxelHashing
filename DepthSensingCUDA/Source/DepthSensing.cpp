@@ -848,7 +848,7 @@ void __extractPointCloud__()
 
 void reconstruction()
 {
-
+	TCPSensor* sensor = (TCPSensor*)getRGBDSensor();
 
 	//only if binary dump
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_BinaryDumpReader || GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_SensorDataReader) {
@@ -937,18 +937,21 @@ void reconstruction()
 
 				const bool useRGBDTracking = false;	//Depth vs RGBD
 				if (!useRGBDTracking) {
-					transformation = g_cameraTracking->applyCT(
-						g_CudaDepthSensor.getCameraSpacePositionsFloat4(), g_CudaDepthSensor.getNormalMapFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
-						//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getNormalMapNoRefinementFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
-						g_rayCast->getRayCastData().d_depth4, g_rayCast->getRayCastData().d_normals, g_rayCast->getRayCastData().d_colors,
-						lastTransform,
-						GlobalCameraTrackingState::getInstance().s_maxInnerIter, GlobalCameraTrackingState::getInstance().s_maxOuterIter,
-						GlobalCameraTrackingState::getInstance().s_distThres, GlobalCameraTrackingState::getInstance().s_normalThres,
-						100.0f, 3.0f,
-						deltaTransformEstimate,
-						GlobalCameraTrackingState::getInstance().s_residualEarlyOut,
-						g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
-						NULL);
+					//deltaTransformEstimate = sensor->getRigidTransform();
+					//transformation = g_cameraTracking->applyCT(
+					//	g_CudaDepthSensor.getCameraSpacePositionsFloat4(), g_CudaDepthSensor.getNormalMapFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
+					//	//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getNormalMapNoRefinementFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
+					//	g_rayCast->getRayCastData().d_depth4, g_rayCast->getRayCastData().d_normals, g_rayCast->getRayCastData().d_colors,
+					//	lastTransform,
+					//	GlobalCameraTrackingState::getInstance().s_maxInnerIter, GlobalCameraTrackingState::getInstance().s_maxOuterIter,
+					//	GlobalCameraTrackingState::getInstance().s_distThres, GlobalCameraTrackingState::getInstance().s_normalThres,
+					//	100.0f, 3.0f,
+					//	deltaTransformEstimate,
+					//	GlobalCameraTrackingState::getInstance().s_residualEarlyOut,
+					//	g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
+					//	NULL);
+					transformation = sensor->getRigidTransform();
+					//std::cout << transformation << std::endl;
 				}
 				else {
 					transformation = g_cameraTrackingRGBD->applyCT(
@@ -1013,6 +1016,9 @@ void reconstruction()
 		//compactification is required for the raycast splatting
 		g_sceneRep->setLastRigidTransformAndCompactify(transformation, g_CudaDepthSensor.getDepthCameraData());
 	}
+	//int num = 0;
+	//cudaMemcpy(&num, g_sceneRep->getHashData().d_hashCompactifiedCounter, sizeof(int), cudaMemcpyDeviceToHost);
+	//std::cout << num << std::endl;
 	//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
 	//__extractPointCloud__();
 	//{
@@ -1794,6 +1800,7 @@ void __VR_runner()
 void __cap(TCPSensor* sensor)
 {
 	sensor->startThread();
+	int i = 200;
 	while (1)
 	{
 		sensor->imgStreamCap();

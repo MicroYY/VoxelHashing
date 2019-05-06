@@ -9,3 +9,4 @@
 *.idb
 *.obj
 /DepthSensingCUDA/CompiledShaders
+*.rar
