@@ -7,7 +7,7 @@
 //#define INTEL_SENSOR
 //#define REAL_SENSE
 //#define STRUCTURE_SENSOR
-//#define TCP_Sensor
+//#define TCP_SENSOR
 #define SENSOR_DATA_READER
 
 //#define OBJECT_SENSING

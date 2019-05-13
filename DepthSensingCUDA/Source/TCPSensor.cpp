@@ -4,7 +4,7 @@
 #include "TCPSensor.h"
 
 
-#ifdef TCP_Sensor
+#ifdef TCP_SENSOR
 
 
 TCPSensor::TCPSensor()
@@ -115,6 +115,7 @@ HRESULT TCPSensor::processDepth()
 			unsigned int index = i * depthWidth + j;
 			//std::cout << "Index = " << index << std::endl;
 			const unsigned short& d = (depthMapUchar[index * 3 + 0] << 8) | depthMapUchar[index * 3 + 1];
+			//const unsigned short& d = depthMapUchar[index * 3 + 0];
 			/*if (depthMapUchar[index * 3 + 0] != 0 && depthMapUchar[index * 3 + 1] != 0)
 				count++;*/
 			//if (index == 153600)
@@ -125,8 +126,8 @@ HRESULT TCPSensor::processDepth()
 			if (d == 0)
 				depth[index] = -std::numeric_limits<float>::infinity();
 			else {
+				//depth[index] =  12.0f * 518.52905273437500000f / d;
 				depth[index] = (float)d * 0.001f;
-			
 				//count++;
 			}
 
@@ -249,6 +250,6 @@ void TCPSensor::quaternion2Mat(float * quaternion)
 
 
 
-#endif // TCP_Sensor
+#endif // TCP_SENSOR
 
 

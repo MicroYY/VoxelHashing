@@ -4,7 +4,7 @@
 #include "GlobalAppState.h"
 #include "MatrixConversion.h"
 
-#ifdef TCP_Sensor
+#ifdef TCP_SENSOR
 
 #include <WinSock2.h>
 
@@ -90,4 +90,4 @@ private:
 
 
 
-#endif // TCP_Sensor
+#endif // TCP_SENSOR

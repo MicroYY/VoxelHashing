@@ -10,3 +10,4 @@
 *.obj
 /DepthSensingCUDA/CompiledShaders
 *.rar
+/SerialPort/x64/Release

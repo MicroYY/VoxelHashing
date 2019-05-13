@@ -9,7 +9,7 @@
 
 extern "C" void renderCS(
 	const HashData& hashData,
-	const RayCastData &rayCastData, 
+	const RayCastData &rayCastData,
 	const DepthCameraData &cameraData,
 	const RayCastParams &rayCastParams);
 
@@ -18,7 +18,7 @@ extern "C" void convertDepthFloatToCameraSpaceFloat4(float4* d_output, float* d_
 
 extern "C" void resetRayIntervalSplatCUDA(RayCastData& data, const RayCastParams& params);
 extern "C" void rayIntervalSplatCUDA(const HashData& hashData, const DepthCameraData& cameraData,
-								 const RayCastData &rayCastData, const RayCastParams &rayCastParams);
+	const RayCastData &rayCastData, const RayCastParams &rayCastParams);
 
 Timer CUDARayCastSDF::m_timer;
 
@@ -42,9 +42,9 @@ void CUDARayCastSDF::render(const HashData& hashData, const HashParams& hashPara
 	m_data.d_rayIntervalSplatMaxArray = m_rayIntervalSplatting.mapMaxToCuda();
 
 	// Start query for timing
-	if(GlobalAppState::getInstance().s_timingsDetailledEnabled)
+	if (GlobalAppState::getInstance().s_timingsDetailledEnabled)
 	{
-		cutilSafeCall(cudaDeviceSynchronize()); 
+		cutilSafeCall(cudaDeviceSynchronize());
 		m_timer.start();
 	}
 
@@ -53,17 +53,20 @@ void CUDARayCastSDF::render(const HashData& hashData, const HashParams& hashPara
 	//convertToCameraSpace(cameraData);
 	if (!m_params.m_useGradients)
 	{
-		//computeNormals(m_data.d_normals, m_data.d_depth4, m_params.m_width, m_params.m_height);
+#ifdef KINECT
+		computeNormals(m_data.d_normals, m_data.d_depth4, m_params.m_width, m_params.m_height);
+#endif // KINECT
+
 	}
 
 	m_rayIntervalSplatting.unmapCuda();
 
 	// Wait for query
-	if(GlobalAppState::getInstance().s_timingsDetailledEnabled)
+	if (GlobalAppState::getInstance().s_timingsDetailledEnabled)
 	{
-		cutilSafeCall(cudaDeviceSynchronize()); 
+		cutilSafeCall(cudaDeviceSynchronize());
 		m_timer.stop();
-		TimingLog::totalTimeRayCast+=m_timer.getElapsedTimeMS();
+		TimingLog::totalTimeRayCast += m_timer.getElapsedTimeMS();
 		TimingLog::countTimeRayCast++;
 	}
 }
@@ -72,8 +75,8 @@ void CUDARayCastSDF::render(const HashData& hashData, const HashParams& hashPara
 void CUDARayCastSDF::convertToCameraSpace(const DepthCameraData& cameraData)
 {
 	convertDepthFloatToCameraSpaceFloat4(m_data.d_depth4, m_data.d_depth, m_params.m_intrinsicsInverse, m_params.m_width, m_params.m_height, cameraData);
-	
-	if(!m_params.m_useGradients) {
+
+	if (!m_params.m_useGradients) {
 		computeNormals(m_data.d_normals, m_data.d_depth4, m_params.m_width, m_params.m_height);
 	}
 }
@@ -82,7 +85,7 @@ void CUDARayCastSDF::rayIntervalSplatting(const HashData& hashData, const HashPa
 {
 	if (hashParams.m_numOccupiedBlocks == 0)	return;
 
-	if (m_params.m_maxNumVertices <= 6*hashParams.m_numOccupiedBlocks) { // 6 verts (2 triangles) per block
+	if (m_params.m_maxNumVertices <= 6 * hashParams.m_numOccupiedBlocks) { // 6 verts (2 triangles) per block
 		MLIB_EXCEPTION("not enough space for vertex buffer for ray interval splatting");
 	}
 
