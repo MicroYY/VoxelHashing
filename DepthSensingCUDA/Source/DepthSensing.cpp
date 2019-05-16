@@ -1185,7 +1185,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
-		//Timer t;
+		
 
 		//vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
 		//vec3f p(posWorld.x, posWorld.y, posWorld.z);
@@ -1200,21 +1200,24 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		}
 		else {
 			//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-		}
+		}Timer t;
 		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
 		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
 		unsigned int numTriangles;
+		
 		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+		
 		//MarchingCubesData d = data.copyToCPU();
 		float3* vertices = (float3*)data.d_triangles;
 
 		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-
+		
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloudFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 
 		//g_marchingCubesHashSDF->clearMeshBuffer();
-		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
+		
+		std::cout << t.getElapsedTime() << "seconds" << std::endl;
 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 8) {

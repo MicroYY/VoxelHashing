@@ -45,7 +45,7 @@ int main()
 	}
 
 	else if (cMode == 'w')
-	{	//写模式e
+	{	//写模式
 		float* pose = (float*)lpbase;
 		float roll, pitch, yaw, quaternion_w, quaternion_x, quaternion_y, quaternion_z, position_x, position_y, position_z;
 		short roll_send = 0, pitch_send = 0, yaw_send = 0, x_send = 0, y_send = 0, z_send = 0;

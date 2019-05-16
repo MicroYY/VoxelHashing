@@ -1,6 +1,14 @@
-﻿#include "stdafx.h"
+﻿
+
+
+
+#include "stdafx.h"
 
 #include "VR.h"
+
+#ifdef VR_DISPLAY
+
+
 
 
 
@@ -487,3 +495,4 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		SDL_GL_SwapWindow(window);
 	}
 }
+#endif // VR_DISPLAY

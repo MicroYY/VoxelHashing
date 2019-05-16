@@ -1,4 +1,8 @@
-﻿#pragma once
+﻿
+#ifdef VR_DISPLAY
+
+
+
 
 #define NOMINMAX
 
@@ -30,3 +34,4 @@
 
 
 void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor);
+#endif // VR_DISPLAY
