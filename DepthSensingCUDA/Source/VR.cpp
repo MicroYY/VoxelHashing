@@ -8,10 +8,6 @@
 
 #ifdef VR_DISPLAY
 
-
-
-
-
 GLchar* OVR_ZED_VS =
 "#version 330 core\n \
 			layout(location=0) in vec3 in_vertex;\n \
@@ -302,7 +298,7 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 	{
 		imageR[i] = 0;
 	}
-	
+
 	TCHAR szName[] = TEXT("pose");
 	HANDLE hMapFile = CreateFileMapping(
 		INVALID_HANDLE_VALUE,
@@ -320,11 +316,13 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		sizeof(float) * 7
 	);
 
-	TCHAR process[] = TEXT("x64\\Release\\SerialPort.exe");
+
+	TCHAR processName[] = TEXT("x64\\Release\\Mapping.exe");
 	STARTUPINFO si = { 0 };
 	PROCESS_INFORMATION pi;
-	auto iRet = CreateProcess(process, NULL, NULL, NULL, false, NULL, NULL, NULL, &si, &pi);
-	if(iRet)
+	DWORD dwExitCode;
+	auto iRet = CreateProcess(processName, NULL, NULL, NULL, false, NULL, NULL, NULL, &si, &pi);
+	if (iRet)
 	{
 		std::cout << "Process started." << std::endl
 			<< "Process ID:\t"
@@ -335,6 +333,7 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		std::cout << "Cannot start process!" << std::endl
 			<< "Error code:\t" << GetLastError() << std::endl;
 	}
+
 
 	ovrTrackingState ts;
 	while (!end) {
@@ -493,6 +492,11 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 		// Swap the SDL2 window
 		SDL_GL_SwapWindow(window);
+
+		CloseHandle(pi.hThread);
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		GetExitCodeProcess(pi.hProcess, &dwExitCode);
+		CloseHandle(pi.hProcess);
 	}
 }
 #endif // VR_DISPLAY

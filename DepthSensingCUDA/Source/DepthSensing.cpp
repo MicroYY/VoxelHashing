@@ -57,6 +57,16 @@ RGBDSensor* getRGBDSensor()
 #endif
 	}
 
+	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_Mynteye)
+	{
+#ifdef MYNTEYE
+		g_sensor = new MynteyeSensor;
+		return g_sensor;
+#else
+		throw MLIB_EXCEPTION("Requires Mynteye SDK and enable MYNTEYE macro");
+#endif // MYNTEYE
+	}
+
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_Kinect) {
 #ifdef KINECT
 		//static KinectSensor s_kinect;
@@ -66,7 +76,7 @@ RGBDSensor* getRGBDSensor()
 #else 
 		throw MLIB_EXCEPTION("Requires KINECT V1 SDK and enable KINECT macro");
 #endif
-	}
+}
 
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_PrimeSense) {
 #ifdef OPEN_NI
@@ -906,7 +916,7 @@ void reconstruction()
 				const bool useRGBDTracking = false;	//Depth vs RGBD
 				if (!useRGBDTracking) {
 					//deltaTransformEstimate = sensor->getRigidTransform();
-#ifdef KINECT
+#ifndef TCP_SENSOR
 					transformation = g_cameraTracking->applyCT(
 						g_CudaDepthSensor.getCameraSpacePositionsFloat4(), g_CudaDepthSensor.getNormalMapFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
 						//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getNormalMapNoRefinementFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
@@ -920,15 +930,15 @@ void reconstruction()
 						g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
 						NULL);
 #else
-#ifdef TCP_SENSOR
+
 					transformation = sensor->getRigidTransform();
 #endif // TCP_SENSOR
-#endif
+
 
 
 
 					//std::cout << transformation << std::endl;
-				}
+			}
 				else {
 					transformation = g_cameraTrackingRGBD->applyCT(
 						//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getColorMapFilteredFloat4(),
@@ -946,9 +956,9 @@ void reconstruction()
 						g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
 						NULL);
 				}
-			}
 		}
 	}
+}
 
 
 	if (GlobalAppState::getInstance().s_recordData) {
@@ -1150,8 +1160,8 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 				float* tex = (float*)CreateAndCopyToDebugTexture2D(pd3dDevice, pd3dImmediateContext, pSurface, true); //!!! TODO just copy no create
 				((StructureSensor*)getRGBDSensor())->updateFeedbackImage((BYTE*)tex);
 				SAFE_DELETE_ARRAY(tex);
-			}
-		}
+	}
+}
 #endif
 	}
 	else if (GlobalAppState::get().s_RenderMode == 2) {
@@ -1185,7 +1195,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
-		
+
 
 		//vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
 		//vec3f p(posWorld.x, posWorld.y, posWorld.z);
@@ -1204,19 +1214,19 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
 		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
 		unsigned int numTriangles;
-		
+
 		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		
+
 		//MarchingCubesData d = data.copyToCPU();
 		float3* vertices = (float3*)data.d_triangles;
 
 		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		
+
 		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloudFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 
 		//g_marchingCubesHashSDF->clearMeshBuffer();
-		
+
 		std::cout << t.getElapsedTime() << "seconds" << std::endl;
 
 	}

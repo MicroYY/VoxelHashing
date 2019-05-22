@@ -37,7 +37,10 @@ TCPSensor::TCPSensor()
 
 TCPSensor::~TCPSensor()
 {
+	closesocket(clientSocket);
+	WSACleanup();
 	free(colorMapUchar);
+
 	free(depthMapUchar);
 	free(recvImg);
 
@@ -71,7 +74,7 @@ HRESULT TCPSensor::createFirstConnected()
 	SOCKADDR_IN srvAddr;
 	srvAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 	srvAddr.sin_family = AF_INET;
-	srvAddr.sin_port = htons(8080);
+	srvAddr.sin_port = htons(8088);
 
 	iRet = connect(clientSocket, (SOCKADDR*)&srvAddr, sizeof(SOCKADDR));
 	if (iRet != 0)
@@ -175,7 +178,7 @@ void TCPSensor::imgStreamCap()
 	iRet = recv(clientSocket, recvPose, 28, 0);
 	while (iRet != 28)
 	{
-		iRet += recv(clientSocket, recvPose, 28 - iRet, 0);
+		iRet += recv(clientSocket, &recvPose[iRet], 28 - iRet, 0);
 	}
 	RT = (float*)recvPose;
 	
@@ -245,8 +248,6 @@ void TCPSensor::quaternion2Mat(float * quaternion)
 
 	
 }
-
-
 
 
 

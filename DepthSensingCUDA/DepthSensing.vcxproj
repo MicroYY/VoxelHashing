@@ -41,6 +41,7 @@
     <Import Project="..\..\..\Props\SDL.props" />
     <Import Project="..\..\..\Props\OVR.props" />
     <Import Project="..\..\..\Props\glew-1.12.0.props" />
+    <Import Project="..\..\..\Props\mynteyed-release.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -102,7 +103,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FloatingPointModel>Fast</FloatingPointModel>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <PreprocessorDefinitions>KINECT;WIN32;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MYNTEYE;WIN32;NDEBUG;_WINDOWS;D3DXFX_LARGEADDRESS_HANDLE;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>Source\DXUT\Optional;Source\DXUT\Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
@@ -202,6 +203,7 @@
     <ClCompile Include="Source\IntelSensor.cpp" />
     <ClCompile Include="Source\KinectOneSensor.cpp" />
     <ClCompile Include="Source\KinectSensor.cpp" />
+    <ClCompile Include="Source\MynteyeSensor.cpp" />
     <ClCompile Include="Source\NetworkSensor.cpp" />
     <ClCompile Include="Source\NetworkServer.cpp" />
     <ClCompile Include="Source\PrimeSenseSensor.cpp" />
@@ -269,6 +271,7 @@
     <ClInclude Include="Source\MarchingCubesSDFUtil.h" />
     <ClInclude Include="Source\MatrixConversion.h" />
     <ClInclude Include="Source\mLib.h" />
+    <ClInclude Include="Source\MynteyeSensor.h" />
     <ClInclude Include="Source\NetworkSensor.h" />
     <ClInclude Include="Source\NetworkServer.h" />
     <ClInclude Include="Source\PrimeSenseSensor.h" />
