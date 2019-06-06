@@ -1860,3 +1860,31 @@ extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, un
 
 
 #endif // _CAMERA_UTIL_
+
+
+
+__global__ void colorWithDepthDevice(float4* d_output, float4* d_inputColor, float4* d_inputDepth, unsigned int width, unsigned int height) {
+	const int x = blockIdx.x*blockDim.x + threadIdx.x;
+	const int y = blockIdx.y*blockDim.y + threadIdx.y;
+	float ratio = 0.5;
+	if (x >= 0 && x < width && y >= 0 && y < height) {
+		unsigned int index = y * width + x;
+		d_output[index].x = d_inputColor[index].x * ratio + d_inputDepth[index].x * (1 - ratio);
+		d_output[index].y = d_inputColor[index].y * ratio + d_inputDepth[index].y * (1 - ratio);
+		d_output[index].z = d_inputColor[index].z * ratio + d_inputDepth[index].z * (1 - ratio);
+		d_output[index].w = d_inputColor[index].w;
+	}
+}
+
+
+
+extern "C" void colorWithDepth(float4* d_output, float4* d_inputColor, float4* d_inputDepth, unsigned int width, unsigned int height) {
+	const dim3 gridSize((width + T_PER_BLOCK - 1) / T_PER_BLOCK, (height + T_PER_BLOCK - 1) / T_PER_BLOCK);
+	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
+	colorWithDepthDevice << <gridSize, blockSize >> > (d_output, d_inputColor, d_inputDepth, width, height);
+
+#ifdef _DEBUG
+	cutilSafeCall(cudaDeviceSynchronize());
+	cutilCheckMsg(__FUNCTION__);
+#endif
+}

@@ -100,6 +100,8 @@ class CUDARGBDSensor
 
 		void generateMapWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles);
 
+		float4* getColorBlendedWithDepth() const;
+
 	private:
 
 		DepthCameraData		m_depthCameraData;

@@ -916,7 +916,7 @@ void reconstruction()
 				const bool useRGBDTracking = false;	//Depth vs RGBD
 				if (!useRGBDTracking) {
 					//deltaTransformEstimate = sensor->getRigidTransform();
-#ifndef TCP_SENSOR
+#ifndef TCP_WITH_POSE
 					transformation = g_cameraTracking->applyCT(
 						g_CudaDepthSensor.getCameraSpacePositionsFloat4(), g_CudaDepthSensor.getNormalMapFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
 						//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getNormalMapNoRefinementFloat4(), g_CudaDepthSensor.getColorMapFilteredFloat4(),
@@ -1109,7 +1109,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 			reconstruction();
 		}
 	}
-
+	g_CudaDepthSensor.getColorBlendedWithDepth();
 	if (GlobalAppState::get().s_RenderMode == 0) {
 		const mat4f renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
 
@@ -1142,6 +1142,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		//g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles);
 
 		//default render mode
+		
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
 
 		//always render, irrespective whether there is a new depth frame available
@@ -1195,8 +1196,8 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
-
-
+		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorBlendedWithDepth(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
+		/*
 		//vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
 		//vec3f p(posWorld.x, posWorld.y, posWorld.z);
 		//g_marchingCubesHashSDF->clearMeshBuffer();
@@ -1228,6 +1229,7 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		//g_marchingCubesHashSDF->clearMeshBuffer();
 
 		std::cout << t.getElapsedTime() << "seconds" << std::endl;
+		*/
 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 8) {

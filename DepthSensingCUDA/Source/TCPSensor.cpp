@@ -1,4 +1,6 @@
 #include "stdafx.h"
+
+#include <fstream>
 #include "cuda_runtime.h"
 
 #include "TCPSensor.h"
@@ -9,6 +11,33 @@
 
 TCPSensor::TCPSensor()
 {
+#ifdef HD
+	colorWidth = 1280;
+	colorHeight = 720;
+
+	depthWidth = 1280;
+	depthHeight = 720;
+
+
+	RGBDSensor::init(depthWidth, depthHeight, depthWidth, depthHeight, 1);
+
+	initializeDepthIntrinsics(1039.90344238281250000, 1039.85351562500000000, 640.06604003906250000, 357.32925415039062500);
+	initializeDepthExtrinsics(mat4f::identity());
+
+	initializeColorIntrinsics(1039.90344238281250000, 1039.85351562500000000, 640.06604003906250000, 357.32925415039062500);
+	initializeColorExtrinsics(mat4f::identity());
+
+	bufSize = colorHeight * colorWidth * 2 * 3;
+	colorMapUchar = (unsigned char*)malloc(sizeof(unsigned char) * colorWidth * colorHeight * 3);
+	depthMapUchar = (unsigned char*)malloc(sizeof(unsigned char) * depthWidth * depthHeight * 3);
+	recvImg = (char*)malloc(sizeof(unsigned char) * bufSize);
+
+	frameNum = 0;
+	start = false;
+	image = cv::Mat(1440, 1280, CV_8UC3);
+	recvPose = (char*)malloc(sizeof(unsigned char) * 28);
+
+#else
 	colorWidth = 640;
 	colorHeight = 480;
 
@@ -33,6 +62,7 @@ TCPSensor::TCPSensor()
 	start = false;
 	image = cv::Mat(960, 640, CV_8UC3);
 	recvPose = (char*)malloc(sizeof(unsigned char) * 28);
+#endif // 720P
 }
 
 TCPSensor::~TCPSensor()
@@ -167,7 +197,7 @@ HRESULT TCPSensor::processColor()
 
 void TCPSensor::imgStreamCap()
 {
-	printf("开始接受图片...\n");
+	//printf("开始接受图片...\n");
 	int iRet = recv(clientSocket, recvImg, bufSize, 0);
 	while (iRet != bufSize)
 	{
@@ -175,28 +205,20 @@ void TCPSensor::imgStreamCap()
 	}
 	//std::cout << " grg"<<(int)recvImg[720 * 640 * 3 + 320 * 3];
 
-	iRet = recv(clientSocket, recvPose, 28, 0);
+#ifdef TCP_WITH_POSE
+iRet = recv(clientSocket, recvPose, 28, 0);
 	while (iRet != 28)
 	{
 		iRet += recv(clientSocket, &recvPose[iRet], 28 - iRet, 0);
 	}
 	RT = (float*)recvPose;
-	
-	//std::cout << RT[0] << " " << RT[1] << " " << RT[2] << " " << RT[3] << std::endl;
-	/*float x = -RT[0];
-	float y = -RT[3];
-	float z = RT[2];
-	float w = RT[1];*/
-	/*float x = -RT[0];
-	float y = RT[3];
-	float z = RT[2];
-	float w = -RT[1];*/
+
 	float q0 = RT[3];
 	float q1 = RT[0];
 	float q2 = RT[1];
 	float q3 = RT[2];
 
-	m_rigidTransform._m00 = 1  - 2 * q2 * q2 - 2 * q3 * q3;
+	m_rigidTransform._m00 = 1 - 2 * q2 * q2 - 2 * q3 * q3;
 	m_rigidTransform._m01 = 2 * q1 * q2 - 2 * q0 * q3;
 	m_rigidTransform._m02 = 2 * q1 * q3 + 2 * q0 * q2;
 	m_rigidTransform._m03 = RT[4];
@@ -215,16 +237,47 @@ void TCPSensor::imgStreamCap()
 	m_rigidTransform._m31 = 0;
 	m_rigidTransform._m32 = 0;
 	m_rigidTransform._m33 = 1;
+#endif // TCP_WITH_POSE
+
+	
+	
+	//std::cout << RT[0] << " " << RT[1] << " " << RT[2] << " " << RT[3] << std::endl;
+	/*float x = -RT[0];
+	float y = -RT[3];
+	float z = RT[2];
+	float w = RT[1];*/
+	/*float x = -RT[0];
+	float y = RT[3];
+	float z = RT[2];
+	float w = -RT[1];*/
+	
 
 	//std::cout << m_rigidTransform << std::endl;
 
 	
-	image.data = (uchar*)recvImg;
+
+	
+	/*image.data = (uchar*)recvImg;
 	cv::imshow("", image);
-	cv::waitKey(1);
+	cv::waitKey(1);*/
 	//mtx.lock();
 	memcpy(colorMapUchar, recvImg, sizeof(unsigned char) * bufSize / 2);
 	memcpy(depthMapUchar, recvImg + bufSize / 2, sizeof(unsigned char) * bufSize / 2);
+	
+	//if (frameNum == 0)
+	//{
+	//	std::ofstream fout("depth123");
+	//	for (int i = 0; i < depthHeight; i++)
+	//	{
+	//		for (size_t j = 0; j < depthWidth; j++)
+	//		{
+	//			unsigned int index = i * depthWidth + j;
+	//			//std::cout << "Index = " << index << std::endl;
+	//			const unsigned short& d = (depthMapUchar[index * 3 + 0] << 8) | depthMapUchar[index * 3 + 1];
+	//			fout << d<<std::endl;
+	//		}
+	//	}
+	//}
 	//for (size_t i = 0; i < 640 * 480; i++)
 	//{
 	//	depthMapUchar[i] = recvImg[640 * 480 * 3 + i * 3];
@@ -236,11 +289,16 @@ void TCPSensor::imgStreamCap()
 		if (depthMapUchar[i * 3 + 0] != 0 && depthMapUchar[i * 3 + 1] != 0)
 			count++;
 	}
+
+
+
 	std::cout << "gregw" << count << std::endl;*/
 	//mtx.unlock();
-	printf("接收到图片\n");
-	printf("Frame: %u\n\n", ++frameNum);
-	//Sleep(25);
+	//printf("接收到图片\n");
+	//printf("Frame: %u\n\n", frameNum);
+	frameNum++;
+	Sleep(25);
+	//printf("\n\n\n\n");
 }
 
 void TCPSensor::quaternion2Mat(float * quaternion)

@@ -61,8 +61,8 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 	}
 
 	int x = SDL_WINDOWPOS_CENTERED, y = SDL_WINDOWPOS_CENTERED;
-	int winWidth = 640;
-	int winHeight = 480;
+	int winWidth = g_CudaDepthSensor->getColorWidth();
+	int winHeight = g_CudaDepthSensor->getColorHeight();
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_Window* window = SDL_CreateWindow("Rendering to Rift", x, y, winWidth, winHeight, flags);
@@ -73,8 +73,8 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 
 	SDL_GL_SetSwapInterval(0);
 
-	int zedWidth = 640;
-	int zedHeight = 480;
+	int zedWidth = g_CudaDepthSensor->getColorWidth();
+	int zedHeight = g_CudaDepthSensor->getColorHeight();
 
 	GLuint textureID[2];
 	glGenTextures(2, textureID);
@@ -234,7 +234,7 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 	// Compute the center of the optical lenses of the headset
 	float offsetLensCenterX = ((atanf(hmdDesc.DefaultEyeFov[0].LeftTan)) / ovrFovH) * 2.f - 1.f;
 	float offsetLensCenterY = ((atanf(hmdDesc.DefaultEyeFov[0].UpTan)) / ovrFovV) * 2.f - 1.f;
-
+	 
 	// Create a rectangle with the computed coordinates and push it in GPU memory
 	struct GLScreenCoordinates {
 		float left, up, right, down;
@@ -387,12 +387,12 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 				//cudaMemcpy2DToArray(arrIm, 0, 0, thread_data.zed_image[ovrEye_Left].getPtr<sl::uchar1>(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getStepBytes(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getWidth() * 4, thread_data.zed_image[ovrEye_Left].getHeight(), cudaMemcpyDeviceToDevice);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, imageL, 4 * 1280, 1280 * 4, 720, cudaMemcpyHostToDevice);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
-				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getAndComputeDepthHSV(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
+				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
 
 				cudaGraphicsSubResourceGetMappedArray(&arrIm, cimg_r, 0, 0);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, thread_data.zed_image[ovrEye_Right].getPtr<sl::uchar1>(sl::MEM_GPU), thread_data.zed_image[ovrEye_Right].getStepBytes(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getWidth() * 4, thread_data.zed_image[ovrEye_Left].getHeight(), cudaMemcpyDeviceToDevice);
 				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
-				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
+				//cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
 
 				//thread_data.mtx.unlock();
 				//thread_data.new_frame = false;
@@ -492,11 +492,12 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 		// Swap the SDL2 window
 		SDL_GL_SwapWindow(window);
+		//std::cout << "12345" << std::endl;
 
-		CloseHandle(pi.hThread);
-		WaitForSingleObject(pi.hProcess, INFINITE);
-		GetExitCodeProcess(pi.hProcess, &dwExitCode);
-		CloseHandle(pi.hProcess);
 	}
+	CloseHandle(pi.hThread);
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	GetExitCodeProcess(pi.hProcess, &dwExitCode);
+	CloseHandle(pi.hProcess);
 }
 #endif // VR_DISPLAY

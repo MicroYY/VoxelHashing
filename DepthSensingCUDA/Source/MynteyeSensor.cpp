@@ -88,7 +88,16 @@ HRESULT MynteyeSensor::processColor()
 	if (!left_color.img)
 		return S_FALSE;
 
-	const uchar* color_buffer = left_color.img->data();
+	cv::Mat left = left_color.img->To(mynteyed::ImageFormat::COLOR_RGB)->ToMat();
+	for (size_t i = 0; i < colorHeight * colorWidth; i++)
+	{
+		m_colorRGBX[i].x = left.data[i * 3 + 0];
+		m_colorRGBX[i].y = left.data[i * 3 + 1];
+		m_colorRGBX[i].z = left.data[i * 3 + 2];
+		m_colorRGBX[i].w = 255;
+	}
+
+	/*const uchar* color_buffer = left_color.img->data();
 	for (size_t i = 0; i < colorHeight * colorWidth * 2; i += 4)
 	{
 		unsigned char y, u, v, r, g, b;
@@ -113,7 +122,7 @@ HRESULT MynteyeSensor::processColor()
 		m_colorRGBX[i / 2 + 1].y = g;
 		m_colorRGBX[i / 2 + 1].z = r;
 		m_colorRGBX[i / 2 + 1].w = 255;
-	}
+	}*/
 	return S_OK;
 }
 

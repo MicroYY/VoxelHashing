@@ -40,6 +40,7 @@ extern "C" void erodeDepthMap(float* d_output, float* d_input, int structureSize
 extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width, unsigned int height, float minDepth, float maxDepth);
 extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height);
 extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, unsigned int width, unsigned int height);
+extern "C" void colorWithDepth(float4* d_output, float4* d_inputColor, float4* d_inputDepth, unsigned int width, unsigned int height);
 
 CUDARGBDSensor::CUDARGBDSensor()
 {
@@ -364,3 +365,10 @@ void CUDARGBDSensor::generateMapWithPointCloud(float3* data, const float4x4& tra
 	convertColorFloat4ToUCHAR4(d_colorWithPointCloudUchar4, d_colorWithPointCloudFloat4, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 }
 
+float4* CUDARGBDSensor::getColorBlendedWithDepth() const
+{
+	depthToHSV(d_depthHSV, m_depthCameraData.d_depthData, getDepthWidth(), getDepthHeight(), 0.4, 8);
+	colorWithDepth(d_colorWithPointCloudFloat4, m_depthCameraData.d_colorData, d_depthHSV, getDepthWidth(), getDepthHeight());
+	convertColorFloat4ToUCHAR4(d_colorWithPointCloudUchar4, d_colorWithPointCloudFloat4, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
+	return d_colorWithPointCloudFloat4;
+}

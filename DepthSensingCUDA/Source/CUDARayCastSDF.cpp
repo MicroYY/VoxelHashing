@@ -53,7 +53,7 @@ void CUDARayCastSDF::render(const HashData& hashData, const HashParams& hashPara
 	//convertToCameraSpace(cameraData);
 	if (!m_params.m_useGradients)
 	{
-#ifndef TCP_SENSOR
+#ifndef TCP_WITH_POSE
 		computeNormals(m_data.d_normals, m_data.d_depth4, m_params.m_width, m_params.m_height);
 #endif // TCP_SENSOR
 

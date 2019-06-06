@@ -21,17 +21,19 @@ int timeCount = 0;
 Eigen::Vector3f interframeOffset(0.0f, 0.0f, 0.0f);
 Eigen::Vector3f lastPos(0.0f, 0.0f, 0.0f);
 Eigen::Vector3f accumDis(0.0f, 0.0f, 0.0f);
-Eigen::Vector3f velocity(0.0f, 0.0f, 0.0f);
+Eigen::Vector3f UAV_velocity(0.0f, 0.0f, 0.0f);
+Eigen::Vector3f userVelocity(0.0f, 0.0f, 0.0f);
 
 char sendData[12];
 SOCKET clientSocket;
 
-void getEulerAngleAndPositionFromPose(float* pose, float& roll, float& pitch, float& yaw, float& position_x, float& position_y, float& position_z)
+void getEulerAngleAndPositionFromHMDPose(float* pose, float& roll, float& pitch, float& yaw, float& position_x, float& position_y, float& position_z)
 {
 	roll = (atan2(2.0f * (pose[3] * pose[2] + pose[0] * pose[1]), 1 - 2.0f  *(pose[0] * pose[0] + pose[2] * pose[2]))) * 180.0f / PI;
 	pitch = asin(2 * (pose[3] * pose[0] - pose[2] * pose[1])) * 180.0f / PI;
 	yaw = atan2(2 * (pose[3] * pose[1] + pose[0] * pose[2]), 1 - 2 * (pose[1] * pose[1] + pose[0] * pose[0])) * 180.0f / PI;
-	position_x = pose[6]; position_y = pose[4]; position_z = pose[5];
+	//调整坐标系的方向，改为左前上为正方向
+	position_x = -pose[6]; position_y = -pose[4]; position_z = pose[5];
 	if (roll < 0.0f)
 		roll += 360.0f;
 	if (pitch < 0.0f)
@@ -57,9 +59,9 @@ void getEulerAngleAndPositionFromPose(float* pose, float& roll, float& pitch, fl
 //		yaw += 360.0f;
 //}
 
-void getPositionFromPose(float* pose, float& position_x, float& position_y, float& position_z)
+void getPositionFromHMDPose(float* pose, float& position_x, float& position_y, float& position_z)
 {
-	position_x = pose[6]; position_y = pose[4]; position_z = pose[5];
+	position_x = -pose[6]; position_y = -pose[4]; position_z = pose[5];
 }
 
 void __send__()
@@ -141,30 +143,32 @@ int main()
 	//yaw = atan2(2 * (quaternion_w*quaternion_y + quaternion_x * quaternion_z), 1 - 2 * (quaternion_y*quaternion_y + quaternion_x * quaternion_x)) * 180.0 / PI;
 	//position_x = tmpPose[6]; position_y = tmpPose[4]; position_z = tmpPose[5];
 
-	Sleep(1000);
+	Sleep(5000);
 	std::cout << "开始读取盔数据" << std::endl;
 	memcpy(tmpPose, pose, bufSize);
-	getEulerAngleAndPositionFromPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
+	getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
 	float initYaw = yaw;
 
 	Eigen::Vector3f initPosition(position_x, position_y, position_z);
 	lastPos = initPosition;
-	std::cout << "init" << std::endl;
-	std::cout << initPosition(2) << std::endl;
+	std::cout << std::endl << "Initial position:" << std::endl;
+	std::cout << initPosition(0) << std::endl << initPosition(1) << std::endl << initPosition(2) << std::endl << std::endl;
+	float initHeight = initPosition(2);
 
 	int count = 0;
 	while (1)
 	{
 		memcpy(tmpPose, pose, bufSize);
-		getEulerAngleAndPositionFromPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
+		getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
 		yaw -= initYaw;
 		if (yaw < 0.0f)
 			yaw += 360.0f;
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
 		Eigen::Vector3f relativePosition = currentPosition - initPosition;
-		float positionAngle = atan2(relativePosition(0), relativePosition(1)) * 180.0f / PI;
+		float positionAngle = atan2(relativePosition(1), relativePosition(0)) * 180.0f / PI;
 		if (positionAngle < 0.0f)
 			positionAngle += 360.0f;
+		//positionAngle += 180.0f;
 
 		float dist = sqrt(relativePosition(0) * relativePosition(0) + relativePosition(1) * relativePosition(1));
 		float heightDist = currentPosition(2) - initPosition(2);
@@ -185,7 +189,7 @@ int main()
 				accumDis += interframeOffset;
 				if (sqrt(accumDis(0) * accumDis(0) + accumDis(1) * accumDis(1)) > breakThres)
 				{
-					float distanceAngle = atan2(accumDis(0), accumDis(1)) * 180.0f / PI;
+					float distanceAngle = atan2(accumDis(1), accumDis(0)) * 180.0f / PI;
 					if (distanceAngle < 0.0f)
 					{
 						distanceAngle += 360.0f;
@@ -193,21 +197,28 @@ int main()
 					float diffAngle = abs(distanceAngle - positionAngle);
 					if (diffAngle < 210.0f && diffAngle > 150.0f)
 					{
-						velocity(0) = 0.0f;
-						velocity(1) = 0.0f;
-						velocity(2) = 0.0f;
+						UAV_velocity(0) = 0.0f;
+						UAV_velocity(1) = 0.0f;
+						UAV_velocity(2) = 0.0f;
+						userVelocity(0) = 0.0f;
+						userVelocity(1) = 0.0f;
+						userVelocity(2) = 0.0f;
 						timeCount = 0;
 						memcpy(tmpPose, pose, bufSize);
-						initPosition = Eigen::Vector3f(tmpPose[6], tmpPose[4], tmpPose[5]);
+						initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
 						accumDis.setZero();
+						std::cout << "紧急制动！！！" << std::endl;
 					}
 					else
 					{
 						float x0 = radius * relativePosition(0) / dist;
 						float y0 = radius * relativePosition(1) / dist;
-						velocity(0) = (relativePosition(0) - x0) * 0.5f;
-						velocity(1) = (relativePosition(1) - y0) * 0.5f;
-						velocity(2) = 0.0f;
+						userVelocity(0) = (relativePosition(0) - x0) * 0.5f;
+						userVelocity(1) = (relativePosition(1) - y0) * 0.5f;
+						userVelocity(2) = 0.0f;
+						UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+						UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+						UAV_velocity(2) = 0.0f;
 						timeCount++;
 					}
 				}
@@ -215,9 +226,12 @@ int main()
 				{
 					float x0 = radius * relativePosition(0) / dist;
 					float y0 = radius * relativePosition(1) / dist;
-					velocity(0) = (relativePosition(0) - x0) * 0.5f;
-					velocity(1) = (relativePosition(1) - y0) * 0.5f;
-					velocity(2) = 0.0f;
+					userVelocity(0) = (relativePosition(0) - x0) * 0.5f;
+					userVelocity(1) = (relativePosition(1) - y0) * 0.5f;
+					userVelocity(2) = 0.0f;
+					UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+					UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+					UAV_velocity(2) = 0.0f;
 					timeCount++;
 				}
 			}
@@ -232,19 +246,29 @@ int main()
 			if (outOfRange)
 			{
 				memcpy(tmpPose, pose, bufSize);
-				initPosition = Eigen::Vector3f(tmpPose[6], tmpPose[4], tmpPose[5]);
+				initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
+				std::cout << "已归中！！！" << std::endl;
 			}
 			outOfRange = false;
-			velocity(0) = 0.0f;
-			velocity(1) = 0.0f;
-			velocity(2) = 0.0f;
+			UAV_velocity(0) = 0.0f;
+			UAV_velocity(1) = 0.0f;
+			UAV_velocity(2) = 0.0f;
+			userVelocity(0) = 0.0f;
+			userVelocity(1) = 0.0f;
+			userVelocity(2) = 0.0f;
 			timeCount = 0;
 		}
 
 		if (heightDist > upThres)
-			velocity(2) = (heightDist - upThres) * 2;
+		{
+			userVelocity(2) = (heightDist - upThres) * 2;
+			UAV_velocity(2) = (heightDist - upThres) * 2;
+		}
 		if (heightDist < downThres)
-			velocity(2) = heightDist - downThres;
+		{
+			userVelocity(2) = heightDist - downThres;
+			UAV_velocity(2) = heightDist - downThres;
+		}
 		count++;
 		if (count == 1000000)
 		{
@@ -252,12 +276,19 @@ int main()
 			std::cout << "Yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
-			std::cout << "velocity: " << std::endl;
-			std::cout << velocity << std::endl << std::endl;
+			std::cout << "Relative position_x: " << relativePosition(0) << std::endl;
+			std::cout << "Relative position_y: " << relativePosition(1) << std::endl;
+			std::cout << "Relative position_z: " << relativePosition(2) << std::endl;
+			std::cout << "Position angle: " << positionAngle << std::endl;
+			std::cout << "UAV velocity: " << std::endl;
+			std::cout << UAV_velocity << std::endl;
+			std::cout << "User velocity: " << std::endl;
+			std::cout << userVelocity << std::endl << std::endl;
+
 			//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
 			//sendData[3] = (char)yaw; sendData[4] = (char)pitch; sendData[5] = (char)roll;
 		}
-		//sendData[0] = velocity(0); sendData[1] = velocity(1); sendData[2] = velocity(2);
+		//sendData[0] = UAV_velocity(0); sendData[1] = UAV_velocity(1); sendData[2] = UAV_velocity(2);
 		//sendData[3] = yaw; sendData[4] = pitch; sendData[5] = roll;
 		//sendData[0] = 1; sendData[1] = 2; sendData[2] = 3;
 
@@ -265,9 +296,9 @@ int main()
 		short yaw0 = short(yaw * 100.0);
 		short pitch0 = short(pitch * 100.0);
 		short roll0 = short(roll * 100.0);
-		short vx = short(velocity(0) * 100.0) + 500;
-		short vy = short(velocity(1) * 100.0) + 500;
-		short vz = short(velocity(2) * 100.0) + 500;
+		short vx = short(UAV_velocity(0) * 100.0) + 500;
+		short vy = short(UAV_velocity(1) * 100.0) + 500;
+		short vz = short(UAV_velocity(2) * 100.0) + 500;
 
 		//std::cout << vx << " " << vy << " " << vz << std::endl;
 
