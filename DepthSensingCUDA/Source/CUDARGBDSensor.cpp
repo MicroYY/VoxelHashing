@@ -367,7 +367,7 @@ void CUDARGBDSensor::generateMapWithPointCloud(float3* data, const float4x4& tra
 
 float4* CUDARGBDSensor::getColorBlendedWithDepth() const
 {
-	depthToHSV(d_depthHSV, m_depthCameraData.d_depthData, getDepthWidth(), getDepthHeight(), 0.4, 8);
+	depthToHSV(d_depthHSV, m_depthCameraData.d_depthData, getDepthWidth(), getDepthHeight(), 0.4, 5);
 	colorWithDepth(d_colorWithPointCloudFloat4, m_depthCameraData.d_colorData, d_depthHSV, getDepthWidth(), getDepthHeight());
 	convertColorFloat4ToUCHAR4(d_colorWithPointCloudUchar4, d_colorWithPointCloudFloat4, m_RGBDAdapter->getWidth(), m_RGBDAdapter->getHeight());
 	return d_colorWithPointCloudFloat4;

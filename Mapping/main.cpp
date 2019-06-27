@@ -82,6 +82,21 @@ void __send__()
 
 int main()
 {
+	TCHAR szName[] = TEXT("pose");
+	HANDLE hMapFile = NULL;
+	LPVOID lpbase = NULL;
+	while (hMapFile == NULL)
+	{
+		hMapFile = OpenFileMapping(FILE_MAP_READ, FALSE, szName);
+	}
+	while (lpbase == NULL)
+	{
+		lpbase = MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
+	}
+
+	std::thread thread;
+	bool threadStarted = false;
+
 	WSADATA wsaData;
 	int iRet = 0;
 	iRet = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -106,7 +121,7 @@ int main()
 	}
 
 	SOCKADDR_IN srvAddr;
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.197");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -117,20 +132,6 @@ int main()
 		return 0;
 	}
 	printf("本地的socket连接已建立");
-
-	std::thread thread(__send__);
-
-	TCHAR szName[] = TEXT("pose");
-	HANDLE hMapFile = NULL;
-	LPVOID lpbase = NULL;
-	while (hMapFile == NULL)
-	{
-		hMapFile = OpenFileMapping(FILE_MAP_READ, FALSE, szName);
-	}
-	while (lpbase == NULL)
-	{
-		lpbase = MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-	}
 
 	float* pose = (float*)lpbase;
 	size_t bufSize = sizeof(float) * 7;
@@ -144,6 +145,7 @@ int main()
 	//position_x = tmpPose[6]; position_y = tmpPose[4]; position_z = tmpPose[5];
 
 	Sleep(5000);
+
 	std::cout << "开始读取盔数据" << std::endl;
 	memcpy(tmpPose, pose, bufSize);
 	getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
@@ -216,9 +218,14 @@ int main()
 						userVelocity(0) = (relativePosition(0) - x0) * 0.5f;
 						userVelocity(1) = (relativePosition(1) - y0) * 0.5f;
 						userVelocity(2) = 0.0f;
+#ifdef SIMULATION
+						UAV_velocity = userVelocity;
+#else
 						UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 						UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 						UAV_velocity(2) = 0.0f;
+#endif // SIMULATION
+
 						timeCount++;
 					}
 				}
@@ -229,9 +236,13 @@ int main()
 					userVelocity(0) = (relativePosition(0) - x0) * 0.5f;
 					userVelocity(1) = (relativePosition(1) - y0) * 0.5f;
 					userVelocity(2) = 0.0f;
+#ifdef SIMULATION
+					UAV_velocity = userVelocity;
+#else
 					UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(2) = 0.0f;
+#endif // SIMULATION
 					timeCount++;
 				}
 			}
@@ -313,6 +324,11 @@ int main()
 
 		//std::cout << (int)sendData[3] << " " << (int)sendData[4] << " " << (int)sendData[3] << std::endl;
 		//std::cout << (int)sendData[0] << " " << (int)sendData[1] << " " << (int)sendData[2] << std::endl;
+		if (!threadStarted)
+		{
+			thread = std::thread(__send__);
+			threadStarted = true;
+		}
 	}
 
 	closesocket(clientSocket);

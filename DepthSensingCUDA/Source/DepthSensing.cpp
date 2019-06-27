@@ -970,7 +970,8 @@ void reconstruction()
 
 	if (transformation(0, 0) == -std::numeric_limits<float>::infinity()) {
 		std::cout << "!!! TRACKING LOST !!!" << std::endl;
-		GlobalAppState::get().s_reconstructionEnabled = false;
+		//ResetDepthSensing();
+		//GlobalAppState::get().s_reconstructionEnabled = false;
 		return;
 	}
 

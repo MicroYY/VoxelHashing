@@ -9,13 +9,15 @@
 #include <iostream>
 #include <Windows.h>
 
-#include <GL/glew.h>
-
 #include <stddef.h>
+
+#include <GL/glew.h>
 
 /*Depending on the SDL version you are using, you may have to include SDL2/SDL.h or directly SDL.h (2.0.7)*/
 #include <SDL.h>
 #include <SDL_syswm.h>
+
+#include <SDL_ttf.h>
 
 #include <opencv2/opencv.hpp>
 #include <Extras/OVR_Math.h>

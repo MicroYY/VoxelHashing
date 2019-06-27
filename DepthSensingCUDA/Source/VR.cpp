@@ -4,9 +4,15 @@
 
 #include "stdafx.h"
 
+#include "windows.h"
+
+
+
 #include "VR.h"
 
 #ifdef VR_DISPLAY
+
+#define MAX_CHAR 128
 
 GLchar* OVR_ZED_VS =
 "#version 330 core\n \
@@ -38,8 +44,21 @@ GLchar* OVR_ZED_FS =
 				out_color = vec4(texture(u_textureZED, b_coordTexture).bgr,1); \n \
 			}";
 
+void drawString(const char* str) {
+	static int isFirstCall = 1;
+	static GLuint lists;
+	if (isFirstCall) {
+		isFirstCall = 0;
+		lists = glGenLists(MAX_CHAR);
+		wglUseFontBitmaps(wglGetCurrentDC(), 0, MAX_CHAR, lists);
+	}
+	for (; *str != '\0'; ++str)
+		glCallList(lists + *str);
+}
+
 void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 {
+	
 	SDL_Init(SDL_INIT_VIDEO);
 	ovrResult result = ovr_Initialize(nullptr);
 	if (OVR_FAILURE(result)) {
@@ -47,6 +66,19 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 		SDL_Quit();
 		return;
 	}
+
+
+
+	if (TTF_Init() == -1) {
+		printf("TTF_Init:%s\n", TTF_GetError());
+		return;
+	}
+	TTF_Font* font;
+	font = TTF_OpenFont("C:\\Users\\server1\\Desktop\\consolas.ttf", 64);
+	if (!font) {
+		printf("TTF_OpenFont:%s\n", TTF_GetError());
+	}
+
 
 	ovrSession session;
 	ovrGraphicsLuid luid;
@@ -380,18 +412,15 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 
 				cudaArray_t arrIm;
 
-
-
-
 				cudaGraphicsSubResourceGetMappedArray(&arrIm, cimg_l, 0, 0);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, thread_data.zed_image[ovrEye_Left].getPtr<sl::uchar1>(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getStepBytes(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getWidth() * 4, thread_data.zed_image[ovrEye_Left].getHeight(), cudaMemcpyDeviceToDevice);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, imageL, 4 * 1280, 1280 * 4, 720, cudaMemcpyHostToDevice);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
-				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
+				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyDeviceToDevice);
 
 				cudaGraphicsSubResourceGetMappedArray(&arrIm, cimg_r, 0, 0);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, thread_data.zed_image[ovrEye_Right].getPtr<sl::uchar1>(sl::MEM_GPU), thread_data.zed_image[ovrEye_Right].getStepBytes(sl::MEM_GPU), thread_data.zed_image[ovrEye_Left].getWidth() * 4, thread_data.zed_image[ovrEye_Left].getHeight(), cudaMemcpyDeviceToDevice);
-				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
+				cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyDeviceToDevice);
 				//cudaMemcpy2DToArray(arrIm, 0, 0, g_CudaDepthSensor->getColorWithPointCloudUchar4(), 4 * g_CudaDepthSensor->getColorWidth() * 1, g_CudaDepthSensor->getColorWidth() * 4 * 1, g_CudaDepthSensor->getColorHeight(), cudaMemcpyHostToDevice);
 
 				//thread_data.mtx.unlock();
