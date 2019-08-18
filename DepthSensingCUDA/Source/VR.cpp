@@ -68,18 +68,6 @@ void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor)
 	}
 
 
-
-	if (TTF_Init() == -1) {
-		printf("TTF_Init:%s\n", TTF_GetError());
-		return;
-	}
-	TTF_Font* font;
-	font = TTF_OpenFont("C:\\Users\\server1\\Desktop\\consolas.ttf", 64);
-	if (!font) {
-		printf("TTF_OpenFont:%s\n", TTF_GetError());
-	}
-
-
 	ovrSession session;
 	ovrGraphicsLuid luid;
 

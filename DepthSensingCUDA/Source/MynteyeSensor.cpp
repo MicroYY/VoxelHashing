@@ -20,8 +20,6 @@ MynteyeSensor::MynteyeSensor()
 
 	initializeColorIntrinsics(1039.90344238281250000, 1039.85351562500000000, 640.06604003906250000, 357.32925415039062500);
 	initializeColorExtrinsics(mat4f::identity());
-
-
 }
 
 MynteyeSensor::~MynteyeSensor()

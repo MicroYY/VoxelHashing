@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DepthSensing", "DepthSensing.vcxproj", "{89F3188C-74EF-4925-BE9B-96EA67B5A528}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SerialPort", "..\SerialPort\SerialPort.vcxproj", "{161CD905-DAF0-449F-8DF1-FB5D76399FEC}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mapping", "..\Mapping\Mapping.vcxproj", "{6AC78513-C8EB-40CF-A872-44CB71E67BFC}"
 EndProject
 Global
@@ -23,14 +21,6 @@ Global
 		{89F3188C-74EF-4925-BE9B-96EA67B5A528}.Release|x64.ActiveCfg = Release|x64
 		{89F3188C-74EF-4925-BE9B-96EA67B5A528}.Release|x64.Build.0 = Release|x64
 		{89F3188C-74EF-4925-BE9B-96EA67B5A528}.Release|x86.ActiveCfg = Release|x64
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Debug|x64.ActiveCfg = Debug|x64
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Debug|x64.Build.0 = Debug|x64
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Debug|x86.ActiveCfg = Debug|Win32
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Debug|x86.Build.0 = Debug|Win32
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Release|x64.ActiveCfg = Release|x64
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Release|x64.Build.0 = Release|x64
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Release|x86.ActiveCfg = Release|Win32
-		{161CD905-DAF0-449F-8DF1-FB5D76399FEC}.Release|x86.Build.0 = Release|Win32
 		{6AC78513-C8EB-40CF-A872-44CB71E67BFC}.Debug|x64.ActiveCfg = Debug|x64
 		{6AC78513-C8EB-40CF-A872-44CB71E67BFC}.Debug|x64.Build.0 = Debug|x64
 		{6AC78513-C8EB-40CF-A872-44CB71E67BFC}.Debug|x86.ActiveCfg = Debug|Win32

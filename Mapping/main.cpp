@@ -121,7 +121,12 @@ int main()
 	}
 
 	SOCKADDR_IN srvAddr;
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.197");
+#ifdef SIMULATION
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.198");
+#else
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#endif // SIMULATION
+
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -162,9 +167,24 @@ int main()
 	{
 		memcpy(tmpPose, pose, bufSize);
 		getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
+		//#ifdef SIMULATION
+		//		yaw -= initYaw;
+		//		if (yaw < 0.0f)
+		//			yaw += 360.0f;
+		//#else
+		//		yaw -= initYaw;
+		//		if (yaw < 0.0f)
+		//			yaw += 360.0f;
+		//		initYaw = yaw;
+		//#endif // SIMULATION
 		yaw -= initYaw;
+#ifdef SIMULATION
 		if (yaw < 0.0f)
 			yaw += 360.0f;
+#endif // SIMULATION
+
+
+
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
 		Eigen::Vector3f relativePosition = currentPosition - initPosition;
 		float positionAngle = atan2(relativePosition(1), relativePosition(0)) * 180.0f / PI;
@@ -207,7 +227,7 @@ int main()
 						userVelocity(2) = 0.0f;
 						timeCount = 0;
 						memcpy(tmpPose, pose, bufSize);
-						initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
+						//initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
 						accumDis.setZero();
 						std::cout << "紧急制动！！！" << std::endl;
 					}
@@ -257,7 +277,7 @@ int main()
 			if (outOfRange)
 			{
 				memcpy(tmpPose, pose, bufSize);
-				initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
+				//initPosition = Eigen::Vector3f(-tmpPose[6], -tmpPose[4], initHeight);
 				std::cout << "已归中！！！" << std::endl;
 			}
 			outOfRange = false;
