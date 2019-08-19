@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <Eigen\Dense>
+#include <iomanip>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -155,6 +156,7 @@ int main()
 	memcpy(tmpPose, pose, bufSize);
 	getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
 	float initYaw = yaw;
+	float initPitch = pitch;
 
 	Eigen::Vector3f initPosition(position_x, position_y, position_z);
 	lastPos = initPosition;
@@ -181,8 +183,19 @@ int main()
 #ifdef SIMULATION
 		if (yaw < 0.0f)
 			yaw += 360.0f;
+
+#else
+		while (yaw < 0.0f)
+		{
+			yaw += 360.0f;
+		}
+		while (yaw > 360.0f)
+		{
+			yaw -= 360.0f;
+		}
 #endif // SIMULATION
 
+		pitch -= initPitch;
 
 
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
@@ -262,6 +275,7 @@ int main()
 					UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(2) = 0.0f;
+					//UAV_velocity = userVelocity;
 #endif // SIMULATION
 					timeCount++;
 				}
@@ -304,7 +318,7 @@ int main()
 		if (count == 1000000)
 		{
 			count = 0;
-			std::cout << "Yaw: " << yaw << std::endl;
+			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
 			std::cout << "Relative position_x: " << relativePosition(0) << std::endl;
