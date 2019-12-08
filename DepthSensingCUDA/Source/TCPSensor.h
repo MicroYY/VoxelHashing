@@ -79,6 +79,7 @@ private:
 	cv::Mat image;
 
 	mat4f				m_rigidTransform;
+	mat4f initTransform;
 	float* RT;
 	char* recvPose;
 

@@ -26,14 +26,14 @@ s_SDFVoxelSize = 0.004f;				//voxel size in meter (IMPORTANT: reduces to improve
 s_SDFMarchingCubeThreshFactor = 10.0f;	//marching cube thresh: s_SDFMarchingCubeThresh = s_SDFMarchingCubeThreshFactor*s_SDFVoxelSize
 s_SDFTruncation = 0.02f;				//truncation in meter
 s_SDFTruncationScale = 0.01f;			//truncation scale in meter per meter
-s_SDFMaxIntegrationDistance = 3.0f;		//maximum integration in meter
+s_SDFMaxIntegrationDistance = 4.0f;		//maximum integration in meter
 s_SDFIntegrationWeightSample = 10;		//weight for an integrated depth value
 s_SDFIntegrationWeightMax = 255;		//maximum integration weight for a voxel
 // s_SDFBlockSize is pound defined (SDF_BLOCK_SIZE)
 // s_hashBucketSize is pound defined (HASH_BUCKET_SIZE)
-s_hashNumBuckets = 5000000;				//smaller voxels require more space
+s_hashNumBuckets = 500000;				//smaller voxels require more space
 //s_hashNumSDFBlocks = 262144;//100000;	
-s_hashNumSDFBlocks = 10000000; //smaller voxels require more space
+s_hashNumSDFBlocks = 1000000; //smaller voxels require more space
 s_hashMaxCollisionLinkedListSize = 7;
 
 // raycast
@@ -88,7 +88,7 @@ s_remappingDepthDiscontinuityThresLin	 = 0.01f;	// additional discontinuity thre
 
 s_bUseCameraCalibration = false;
 
-s_marchingCubesMaxNumTriangles = 50000000; // max buffer size for marching cube
+s_marchingCubesMaxNumTriangles = 2500000; // max buffer size for marching cube
 
 //streaming parameters
 s_streamingEnabled = false;

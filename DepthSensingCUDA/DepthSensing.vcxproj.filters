@@ -175,6 +175,9 @@
     <ClCompile Include="Source\MynteyeSensor.cpp">
       <Filter>Sensors</Filter>
     </ClCompile>
+    <ClCompile Include="Source\LocalSensor.cpp">
+      <Filter>Sensors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\CameraParams.h" />
@@ -347,6 +350,9 @@
     </ClInclude>
     <ClInclude Include="Source\VR.h" />
     <ClInclude Include="Source\MynteyeSensor.h">
+      <Filter>Sensors</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\LocalSensor.h">
       <Filter>Sensors</Filter>
     </ClInclude>
   </ItemGroup>

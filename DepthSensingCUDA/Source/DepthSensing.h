@@ -21,7 +21,7 @@
 #include "RealSenseSensor.h"
 #include "TCPSensor.h"
 #include "MynteyeSensor.h"
-
+#include "LocalSensor.h"
 
 #include "DXUT.h"
 #include "DXUTcamera.h"

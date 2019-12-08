@@ -84,24 +84,6 @@ class CUDARGBDSensor
 		//! computes and returns the depth map in hsv
 		float4* getAndComputeDepthHSV() const;
 
-		float4* getColorWithPointCloud(float3* data, const float4x4& transformation,const unsigned int numTriangles) const;
-
-		float4* getColorWithPointCloud(float4* depth) const;
-
-		uchar4* getColorWithPointCloudUchar4() const
-		{
-			return d_colorWithPointCloudUchar4;
-		}
-
-		float4* getColorWithPointCloudFloat4() const
-		{
-			return d_colorWithPointCloudFloat4;
-		}
-
-		void generateMapWithPointCloud(float3* data, const float4x4& transformation, const unsigned int numTriangles);
-
-		float4* getColorBlendedWithDepth() const;
-
 	private:
 
 		DepthCameraData		m_depthCameraData;
@@ -138,8 +120,7 @@ class CUDARGBDSensor
 
 		//! hsv depth for visualization
 		float4* d_depthHSV;
-		float4* d_colorWithPointCloudFloat4;
-		uchar4* d_colorWithPointCloudUchar4;
+
 
 		Timer m_timer;
 };

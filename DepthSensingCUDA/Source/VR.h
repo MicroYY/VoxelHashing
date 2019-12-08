@@ -35,5 +35,5 @@
 
 
 
-void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor);
+void __VR_runner(CUDARGBDSensor* g_CudaDepthSensor, uchar4* image);
 #endif // VR_DISPLAY

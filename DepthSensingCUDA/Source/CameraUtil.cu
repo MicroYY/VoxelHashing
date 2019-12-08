@@ -1768,63 +1768,7 @@ extern "C" void depthToHSV(float4* d_output, float* d_input, unsigned int width,
 #endif
 }
 
-__global__ void colorWithPointCloudDevice(float4* d_output, const float3* d_input, const float4x4& transformationInv, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
-	//const int x = blockIdx.x*blockDim.x + threadIdx.x;
-	//const int y = blockIdx.y*blockDim.y + threadIdx.y;
-	int i = blockDim.x * blockIdx.x + threadIdx.x;
-	//if (x >= 0 && x < 3 && y >= 0 && y < numTriangles) {
-	float3 pCamera = transformationInv * d_input[i * 6];
-	if (pCamera.z >= 4 || pCamera.z <= 0.4)
-		return;
-	int2 pixel = depthCameraData.cameraToKinectScreenInt(pCamera);
-
-	if (pixel.x >= width || pixel.x <= 0)
-		return;
-	if (pixel.y >= height || pixel.y <= 0)
-		return;
-	int index = pixel.y * width + pixel.x;
-	if (index >= width * height)
-		return;
-	//printf("%d", mark[index]);
-	//if (mark[index] == 0)
-	//{
-		//mark[index] = 1;
-		float f = (pCamera.z - 0.4) / 3.6 * 1.0;
-		//d_output[index].z = d_output[index].z * f + (1.0 - f) * 1.0f;
-		d_output[index].x = 0;
-		d_output[index].y = 0;
-		d_output[index].z = 1.0 - f;
-		//mark[index] = pCamera.z;
-	//}
-
-	//d_output[index].x = 0;
-
-	//d_output[index].y = 0;
-
-	//d_output[index].w = 1.0f;
-//}
-}
-
-
-
-extern "C" void colorWithPointCloud(float4* d_output, const float3* d_input, const float4x4& transformation, unsigned int numTriangles, const DepthCameraData& depthCameraData, unsigned int width, unsigned int height) {
-	const int blockSize = 512;
-	const int gridSize = (numTriangles + blockSize - 1) / blockSize;
-
-	float4x4 transInv = transformation.getInverse();
-	float4x4* t;
-	cudaMalloc(&t, sizeof(float4x4) * 1);
-	cudaMemcpy(t, &transInv, sizeof(float4x4), cudaMemcpyHostToDevice);
-
-	colorWithPointCloudDevice << <gridSize, blockSize >> > (d_output, d_input, *t, numTriangles, depthCameraData, width, height);
-
-#ifdef _DEBUG
-	cutilSafeCall(cudaDeviceSynchronize());
-	cutilCheckMsg(__FUNCTION__);
-#endif
-}
-
-__global__ void colorWithPointCloudRayCastDevice(float4* d_output, float4* d_input, unsigned int width, unsigned int height) {
+__global__ void colorWithPointCloudRayCastDevice(uchar4* d_output, const uchar4* d_input1, const float4* d_input2, unsigned int width, unsigned int height) {
 	const int x = blockIdx.x*blockDim.x + threadIdx.x;
 	const int y = blockIdx.y*blockDim.y + threadIdx.y;
 
@@ -1835,22 +1779,41 @@ __global__ void colorWithPointCloudRayCastDevice(float4* d_output, float4* d_inp
 		//if (y % 3 != 0)
 		//	return;
 
-		float depth = d_input[index].z;
-		if (depth > 4.0f || depth < 0.4f)
-			return;
 
+		float depth = d_input2[index].z;
+		/*	if (depth > 8.0f || depth < 0.1f)
+			{
+				d_output[index].x = d_input1[index].x;
+				d_output[index].y = d_input1[index].y;
+				d_output[index].z = d_input1[index].z;
+				d_output[index].w = d_input1[index].w;
+				return;
+			}*/
+
+			//if (x % 2 != 0 || y % 2 != 0)
+			//{
+			//	d_output[index].x = d_input1[index].x;
+			//	d_output[index].y = d_input1[index].y;
+			//	d_output[index].z = d_input1[index].z;
+			//	d_output[index].w = d_input1[index].w;
+			//	//return;
+			//}
 		float f = (depth - 0.4) / 3.6 * 1.0;
-		d_output[index].x = 0;
-		d_output[index].y = 0;
-		d_output[index].z = 1.0 - f;
+		d_output[index].x = d_input2[index].x * 0.5 * 255.0 + d_input1[index].x * 0.5;
+		d_output[index].y = d_input2[index].y * 0.5 * 255.0 + d_input1[index].y * 0.5;
+		d_output[index].z = d_input2[index].z * 0.5 * 255.0 + d_input1[index].z * 0.5;
+		d_output[index].w = d_input1[index].w;
 	}
 
 }
 
-extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, unsigned int width, unsigned int height) {
+extern "C" void colorWithPointCloudRayCast(uchar4* d_output, const uchar4* d_input1, const float4* d_input2, unsigned int width, unsigned int height) {
 	const dim3 gridSize((width + T_PER_BLOCK - 1) / T_PER_BLOCK, (height + T_PER_BLOCK - 1) / T_PER_BLOCK);
 	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
-	colorWithPointCloudRayCastDevice << <gridSize, blockSize >> > (d_output, d_input, width, height);
+
+	//curandState *dev_states;
+	//cudaMalloc((void **)&dev_states, sizeof(curandState)*array_size_width*array_size_height);
+	colorWithPointCloudRayCastDevice << <gridSize, blockSize >> > (d_output, d_input1, d_input2, width, height);
 
 #ifdef _DEBUG
 	cutilSafeCall(cudaDeviceSynchronize());
@@ -1860,31 +1823,3 @@ extern "C" void colorWithPointCloudRayCast(float4* d_output, float4* d_input, un
 
 
 #endif // _CAMERA_UTIL_
-
-
-
-__global__ void colorWithDepthDevice(float4* d_output, float4* d_inputColor, float4* d_inputDepth, unsigned int width, unsigned int height) {
-	const int x = blockIdx.x*blockDim.x + threadIdx.x;
-	const int y = blockIdx.y*blockDim.y + threadIdx.y;
-	float ratio = 0.5;
-	if (x >= 0 && x < width && y >= 0 && y < height) {
-		unsigned int index = y * width + x;
-		d_output[index].x = d_inputColor[index].x * ratio + d_inputDepth[index].x * (1 - ratio);
-		d_output[index].y = d_inputColor[index].y * ratio + d_inputDepth[index].y * (1 - ratio);
-		d_output[index].z = d_inputColor[index].z * ratio + d_inputDepth[index].z * (1 - ratio);
-		d_output[index].w = d_inputColor[index].w;
-	}
-}
-
-
-
-extern "C" void colorWithDepth(float4* d_output, float4* d_inputColor, float4* d_inputDepth, unsigned int width, unsigned int height) {
-	const dim3 gridSize((width + T_PER_BLOCK - 1) / T_PER_BLOCK, (height + T_PER_BLOCK - 1) / T_PER_BLOCK);
-	const dim3 blockSize(T_PER_BLOCK, T_PER_BLOCK);
-	colorWithDepthDevice << <gridSize, blockSize >> > (d_output, d_inputColor, d_inputDepth, width, height);
-
-#ifdef _DEBUG
-	cutilSafeCall(cudaDeviceSynchronize());
-	cutilCheckMsg(__FUNCTION__);
-#endif
-}

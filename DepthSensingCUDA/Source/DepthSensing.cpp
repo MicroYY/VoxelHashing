@@ -20,7 +20,7 @@
 
 CDXUTDialogResourceManager	g_DialogResourceManager; // manager for shared resources of dialogs
 CDXUTTextHelper*            g_pTxtHelper = NULL;
-bool						g_renderText = true;
+bool						g_renderText = false;
 bool						g_bRenderHelp = true;
 
 CModelViewerCamera          g_Camera;               // A model viewing camera
@@ -39,12 +39,29 @@ CUDAMarchingCubesHashSDF*	g_marchingCubesHashSDF = NULL;
 CUDAHistrogramHashSDF*		g_historgram = NULL;
 CUDASceneRepChunkGrid*		g_chunkGrid = NULL;
 
+uchar4* d_blendedImage;
+uchar4* d_image;
+float4* d_dataFloat4;
+mat4f renderTransform;
+uchar4* d_lastImage;
+
+extern "C" void colorWithPointCloudRayCast(uchar4* d_output, const uchar4* d_input1, const float4* d_input2, unsigned int width, unsigned int height);
+extern "C" void depthToHSV(float4* d_output, const float* d_input, unsigned int width, unsigned int height, float minDepth, float maxDepth);
 
 
 RGBDSensor* getRGBDSensor()
 {
 	static RGBDSensor* g_sensor = NULL;
 	if (g_sensor != NULL)	return g_sensor;
+
+	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_Local)
+	{
+#ifdef LOCAL_SENSOR
+		g_sensor = new LocalSensor;
+		return g_sensor;
+#endif // LOCAL_SENSOR
+
+	}
 
 
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_TCPSensor)
@@ -76,7 +93,7 @@ RGBDSensor* getRGBDSensor()
 #else 
 		throw MLIB_EXCEPTION("Requires KINECT V1 SDK and enable KINECT macro");
 #endif
-}
+	}
 
 	if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_PrimeSense) {
 #ifdef OPEN_NI
@@ -300,61 +317,6 @@ void StopScanningAndExtractIsoSurfaceMC(const std::string& filename, bool overwr
 	//g_chunkGrid->debugCheckForDuplicates();
 }
 
-void BlendPointCloud(const std::string & filename, bool overwriteExistingFile)
-{
-	if (GlobalAppState::get().s_sensorIdx == 7) { //! hack for structure sensor
-		std::cout << "[marching cubes] stopped receiving frames from structure sensor" << std::endl;
-		getRGBDSensor()->stopReceivingFrames();
-	}
-
-	Timer t;
-
-	vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
-	vec3f p(posWorld.x, posWorld.y, posWorld.z);
-
-	g_marchingCubesHashSDF->clearMeshBuffer();
-	if (!GlobalAppState::get().s_streamingEnabled) {
-		//g_chunkGrid->stopMultiThreading();
-		//g_chunkGrid->streamInToGPUAll();
-		g_marchingCubesHashSDF->extractIsoSurface(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-		//g_chunkGrid->startMultiThreading();
-	}
-	else {
-		g_marchingCubesHashSDF->extractIsoSurface(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-	}
-
-	vec4uc* color = g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
-	const MeshDataf& data = g_marchingCubesHashSDF->getMetaDataf();
-	const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
-	const mat4f& transformation = g_sceneRep->getLastRigidTransform();
-	for (size_t i = 0; i < data.m_Vertices.size(); i++)
-	{
-		//unsigned int x = renderIntrinsics(0,0) * p.x + renderIntrinsics(0,1) * 
-		//point3d<float> point = renderIntrinsics * transformation * data.m_Vertices[i];
-		mat4f KT = renderIntrinsics * transformation.getInverse();
-		float x = KT(0, 0) * data.m_Vertices[i].x + KT(0, 1) * data.m_Vertices[i].y + KT(0, 2) * data.m_Vertices[i].z + KT(0, 3) * 1.0;
-		float y = KT(1, 0) * data.m_Vertices[i].x + KT(1, 1) * data.m_Vertices[i].y + KT(1, 2) * data.m_Vertices[i].z + KT(1, 3) * 1.0;
-		float z = KT(2, 0) * data.m_Vertices[i].x + KT(2, 1) * data.m_Vertices[i].y + KT(2, 2) * data.m_Vertices[i].z + KT(2, 3) * 1.0;
-		if (z<0.4f || z>4.0f)
-			continue;
-		x /= z;
-		y /= z;
-		unsigned int ix = floor(x);
-		unsigned int iy = floor(y);
-		unsigned int index = iy * 640 + ix;
-		if (index >= 307200)
-			continue;
-		color[index].x = color[index].x * (1.0f - z) + 0.0 * z;
-		color[index].y = color[index].y * (1.0f - z) + 255.0 * z;
-		color[index].z = color[index].z * (1.0f - z) + 0.0 * z;
-		//std::cout << x << " " << y << std::endl;
-	}
-	g_marchingCubesHashSDF->clearMeshBuffer();
-	std::cout << "Point cloud blend time " << t.getElapsedTime() << " seconds" << std::endl;
-
-	ColorImageRGBA colorImage(g_RGBDAdapter.getRGBDSensor()->getDepthHeight(), g_RGBDAdapter.getRGBDSensor()->getDepthWidth(), color);
-	FreeImageWrapper::saveImage(filename, colorImage);
-}
 
 
 
@@ -525,50 +487,6 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool bAltDown, void* pUserCo
 			Util::writeToImage(g_CudaDepthSensor.getDepthCameraData().d_depthData, g_CudaDepthSensor.getDepthCameraParams().m_imageWidth, g_CudaDepthSensor.getDepthCameraParams().m_imageHeight, "depth.png");
 			Util::writeToImage(g_rayCast->getRayCastData().d_depth, g_rayCast->getRayCastParams().m_width, g_rayCast->getRayCastParams().m_height, "raycast.png");
 
-			/*
-			float* depth = g_RGBDAdapter.getRGBDSensor()->getDepthFloat();
-			//unsigned char* color = (unsigned char*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
-			vec4uc* color = g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
-			for (size_t i = 0; i < g_RGBDAdapter.getRGBDSensor()->getDepthHeight()*g_RGBDAdapter.getRGBDSensor()->getDepthWidth(); i += 19)
-			{
-				if (i / 640 % 2 == 0)
-					continue;
-				if (depth[i] >= 0.4f && depth[i] <= 4.0f)
-				{
-					float f = (depth[i] - 0.4f) / 3.6f;
-					//color[i * 4 + 0] = (color[i * 4 + 0] + 255) / 2;
-					//color[i + 4 + 1] = (color[i * 4 + 1] + 255) / 2;
-					//color[i + 4 + 2] = (color[i * 4 + 2] + 0) / 2;
-					//color[i].x = (color[i].x + 0) / 2;
-					//color[i].y = (color[i].y + 0) / 2;
-					////color[i].z = (color[i].z + 255) / 2;
-					color[i].x = color[i].x * (1.0f - f) + 255.0 * f;
-					color[i].y = color[i].y * (1.0f - f) + 0.0 * f;
-					color[i].z = color[i].z * (1.0f - f) + 0.0 * f;
-
-					color[i - 1].x = color[i - 1].x * (1.0f - f) + 255.0 * f;
-					color[i - 1].y = color[i - 1].y * (1.0f - f) + 0.0 * f;
-					color[i - 1].z = color[i - 1].z * (1.0f - f) + 0.0 * f;
-
-					color[i + 1].x = color[i + 1].x * (1.0f - f) + 255.0 * f;
-					color[i + 1].y = color[i + 1].y * (1.0f - f) + 0.0 * f;
-					color[i + 1].z = color[i + 1].z * (1.0f - f) + 0.0 * f;
-
-					color[i - 640].x = color[i - 640].x * (1.0f - f) + 255.0 * f;
-					color[i - 640].y = color[i - 640].y * (1.0f - f) + 0.0 * f;
-					color[i - 640].z = color[i - 640].z * (1.0f - f) + 0.0 * f;
-
-					color[i + 640].x = color[i + 640].x * (1.0f - f) + 255.0 * f;
-					color[i + 640].y = color[i + 640].y * (1.0f - f) + 0.0 * f;
-					color[i + 640].z = color[i + 640].z * (1.0f - f) + 0.0 * f;
-
-				}
-				//std::cout << i << std::endl;
-			}
-
-			ColorImageRGBA colorImage(g_RGBDAdapter.getRGBDSensor()->getDepthHeight(), g_RGBDAdapter.getRGBDSensor()->getDepthWidth(), color);
-			FreeImageWrapper::saveImage("color.png", colorImage);
-			*/
 			break;
 		}
 		case 'N':
@@ -717,6 +635,11 @@ HRESULT CALLBACK OnD3D11CreateDevice(ID3D11Device* pd3dDevice, const DXGI_SURFAC
 	//std::cout << "waiting..." << std::endl;
 	//getchar();
 
+	//h_image = (uchar4*)malloc(sizeof(uchar4) * 640 * 480);
+	cudaMalloc(&d_blendedImage, sizeof(uchar4) * 640 * 480);
+	cutilSafeCall(cudaMalloc(&d_dataFloat4, sizeof(float4) * 640 * 480));
+	cudaMalloc(&d_image, sizeof(uchar4) * 640 * 480);
+	cudaMalloc(&d_lastImage, sizeof(uchar4) * 640 * 480);
 	return hr;
 }
 
@@ -792,40 +715,16 @@ void CALLBACK OnD3D11ReleasingSwapChain(void* pUserContext)
 
 
 
-void __extractPointCloud__()
-{
-	while (g_RGBDAdapter.getFrameNumber() != 0) {
-		//if (!GlobalAppState::get().s_streamingEnabled) {
-			//g_chunkGrid->stopMultiThreading();
-			//g_chunkGrid->streamInToGPUAll();
-		g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-		//g_chunkGrid->startMultiThreading();
-	//}
-	//else {
-		//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-	//}
-	//std::cout << t.getElapsedTime() << "seconds" << std::endl;
-		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
-		unsigned int numTriangles;
-		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		//MarchingCubesData d = data.copyToCPU();
-		float3* vertices = (float3*)data.d_triangles;
-
-		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vectices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-
-		g_CudaDepthSensor.generateMapWithPointCloud(vertices, transformation, numTriangles);
-
-		//g_marchingCubesHashSDF->clearMeshBuffer();
-	}
-}
 
 
 void reconstruction()
 {
 #ifdef TCP_SENSOR
 	TCPSensor* sensor = (TCPSensor*)getRGBDSensor();
+#elif LOCAL_SENSOR
+	LocalSensor* sensor = (LocalSensor*)getRGBDSensor();
 #endif // TCP_SENSOR
+
 
 
 	//only if binary dump
@@ -846,6 +745,7 @@ void reconstruction()
 		}
 		//std::cout << transformation << std::endl;
 	}
+	
 
 	if (g_RGBDAdapter.getFrameNumber() > 1) {
 		mat4f renderTransform = g_sceneRep->getLastRigidTransform();
@@ -853,7 +753,7 @@ void reconstruction()
 		if ((GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_BinaryDumpReader || GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_SensorDataReader)
 			&& GlobalAppState::get().s_binaryDumpSensorUseTrajectory
 			&& GlobalAppState::get().s_binaryDumpSensorUseTrajectoryOnlyInit) {
-			//deltaTransformEstimate = lastTransform.getInverse() * transformation;
+			//deltaTransformEstimate = renderTransform.getInverse() * transformation;
 			mat4f deltaTransformEstimate = g_RGBDAdapter.getRigidTransform(-1).getInverse() * transformation;
 			renderTransform = renderTransform * deltaTransformEstimate;
 			g_sceneRep->setLastRigidTransformAndCompactify(renderTransform, g_CudaDepthSensor.getDepthCameraData());
@@ -909,7 +809,7 @@ void reconstruction()
 				if ((GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_BinaryDumpReader || GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_SensorDataReader)
 					&& GlobalAppState::get().s_binaryDumpSensorUseTrajectory
 					&& GlobalAppState::get().s_binaryDumpSensorUseTrajectoryOnlyInit) {
-					//deltaTransformEstimate = lastTransform.getInverse() * transformation;	//simple case; not ideal in case of drift
+					//deltaTransformEstimate = renderTransform.getInverse() * transformation;	//simple case; not ideal in case of drift
 					//deltaTransformEstimate = g_RGBDAdapter.getRigidTransform(-1).getInverse() * transformation;
 				}
 
@@ -929,8 +829,11 @@ void reconstruction()
 						GlobalCameraTrackingState::getInstance().s_residualEarlyOut,
 						g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
 						NULL);
+					//transformation = mat4f::identity();
 #else
 
+					//renderTransform = transformation;
+					
 					transformation = sensor->getRigidTransform();
 #endif // TCP_SENSOR
 
@@ -938,7 +841,7 @@ void reconstruction()
 
 
 					//std::cout << transformation << std::endl;
-			}
+				}
 				else {
 					transformation = g_cameraTrackingRGBD->applyCT(
 						//g_rayCast->getRayCastData().d_depth4Transformed, g_CudaDepthSensor.getColorMapFilteredFloat4(),
@@ -956,9 +859,9 @@ void reconstruction()
 						g_RGBDAdapter.getDepthIntrinsics(), g_CudaDepthSensor.getDepthCameraData(),
 						NULL);
 				}
+			}
 		}
 	}
-}
 
 
 	if (GlobalAppState::getInstance().s_recordData) {
@@ -1110,7 +1013,40 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 			reconstruction();
 		}
 	}
-	g_CudaDepthSensor.getColorBlendedWithDepth();
+
+#ifdef VR_DISPLAY
+	
+	if (g_RGBDAdapter.getFrameNumber() == 1)
+	{
+		//g_rayCast->render(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_CudaDepthSensor.getDepthCameraData(), renderTransform);
+		//const uchar4* h_color = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
+		uchar4* h_image = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
+		cudaMemcpy(d_image, h_image, sizeof(uchar4) * 640 * 480, cudaMemcpyHostToDevice);
+		float* rayCastedDepth = g_rayCast->getRayCastData().d_depth;
+		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, 0.4f, 4.0f);
+		colorWithPointCloudRayCast(d_blendedImage, d_image, d_dataFloat4, 640, 480);
+		cudaMemcpy(d_lastImage, d_image, sizeof(uchar4) * 640 * 480,cudaMemcpyDeviceToDevice);
+	}
+	else if (g_RGBDAdapter.getFrameNumber() > 1)
+	{
+		float* rayCastedDepth = g_rayCast->getRayCastData().d_depth;
+		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, 0.4f, 4.0f);
+		colorWithPointCloudRayCast(d_blendedImage, d_lastImage, d_dataFloat4, 640, 480);
+		uchar4* h_image = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
+		cudaMemcpy(d_lastImage, h_image, sizeof(uchar4) * 640 * 480, cudaMemcpyHostToDevice);
+	}
+
+	
+
+	/*
+	uchar4* h_image = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
+	cudaMemcpy(d_image, h_image, sizeof(uchar4) * 640 * 480, cudaMemcpyHostToDevice);
+	float* rayCastedDepth = g_rayCast->getRayCastData().d_depth;
+	depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, 0.4f, 4.0f);
+	colorWithPointCloudRayCast(d_blendedImage, d_image, d_dataFloat4, 640, 480);
+*/
+#endif
+
 	if (GlobalAppState::get().s_RenderMode == 0) {
 		const mat4f renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
 
@@ -1123,27 +1059,8 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 	}
 	else if (GlobalAppState::get().s_RenderMode == 1)
 	{
-		////if (!GlobalAppState::get().s_streamingEnabled) {
-		//	//g_chunkGrid->stopMultiThreading();
-		//	//g_chunkGrid->streamInToGPUAll();
-		//	g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-		//	//g_chunkGrid->startMultiThreading();
-		////}
-		////else {
-		//	//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-		////}
-		////std::cout << t.getElapsedTime() << "seconds" << std::endl;
-		//const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
-		//unsigned int numTriangles;
-		//cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-		////MarchingCubesData d = data.copyToCPU();
-		//float3* vertices = (float3*)data.d_triangles;
-
-		//const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-		//g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles);
-
 		//default render mode
-		
+
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
 
 		//always render, irrespective whether there is a new depth frame available
@@ -1162,8 +1079,8 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 				float* tex = (float*)CreateAndCopyToDebugTexture2D(pd3dDevice, pd3dImmediateContext, pSurface, true); //!!! TODO just copy no create
 				((StructureSensor*)getRGBDSensor())->updateFeedbackImage((BYTE*)tex);
 				SAFE_DELETE_ARRAY(tex);
-	}
-}
+			}
+		}
 #endif
 	}
 	else if (GlobalAppState::get().s_RenderMode == 2) {
@@ -1191,50 +1108,10 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		DX11QuadDrawer::RenderQuad(pd3dImmediateContext, DX11PhongLighting::GetColorsSRV(), 1.0f);
 	}
 	else if (GlobalAppState::get().s_RenderMode == 6) {
-		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_rayCast->getRayCastData().d_depth4, 4, g_rayCast->getRayCastParams().m_width, g_rayCast->getRayCastParams().m_height, 500.0f);	
-		float4* vertices = g_rayCast->getRayCastData().d_depth4;
-		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-
 	}
 	else if (GlobalAppState::get().s_RenderMode == 7) {
-		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorBlendedWithDepth(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-		/*
-		//vec4f posWorld = g_sceneRep->getLastRigidTransform()*GlobalAppState::get().s_streamingPos; // trans lags one frame
-		//vec3f p(posWorld.x, posWorld.y, posWorld.z);
-		//g_marchingCubesHashSDF->clearMeshBuffer();
-
-
-		if (!GlobalAppState::get().s_streamingEnabled) {
-			//g_chunkGrid->stopMultiThreading();
-			//g_chunkGrid->streamInToGPUAll();
-			g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_rayCast->getRayCastData());
-			//g_chunkGrid->startMultiThreading();
-		}
-		else {
-			//g_marchingCubesHashSDF->extractIsoSurfaceWithoutCopy(*g_chunkGrid, g_rayCast->getRayCastData(), p, GlobalAppState::getInstance().s_streamingRadius);
-		}Timer t;
-		//std::cout << t.getElapsedTime() << "seconds" << std::endl;
-		const MarchingCubesData& data = g_marchingCubesHashSDF->getMarchingCubesData();
-		unsigned int numTriangles;
-
-		cudaMemcpy(&numTriangles, data.d_numTriangles, sizeof(unsigned int), cudaMemcpyDeviceToHost);
-
-		//MarchingCubesData d = data.copyToCPU();
-		float3* vertices = (float3*)data.d_triangles;
-
-		const float4x4& transformation = MatrixConversion::toCUDA(g_sceneRep->getLastRigidTransform());
-
-		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloudFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-		DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorWithPointCloud(vertices, transformation, numTriangles), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
-
-		//g_marchingCubesHashSDF->clearMeshBuffer();
-
-		std::cout << t.getElapsedTime() << "seconds" << std::endl;
-		*/
-
 	}
 	else if (GlobalAppState::get().s_RenderMode == 8) {
-		//DX11QuadDrawer::RenderQuadDynamic(DXUTGetD3D11Device(), pd3dImmediateContext, (float*)g_CudaDepthSensor.getColorMapFilteredLastFrameFloat4(), 4, g_CudaDepthSensor.getColorWidth(), g_CudaDepthSensor.getColorHeight());
 	}
 	else if (GlobalAppState::get().s_RenderMode == 9) {
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
@@ -1507,7 +1384,7 @@ int main(int argc, char** argv)
 
 
 #ifdef VR_DISPLAY
-		std::thread runner(__VR_runner, &g_CudaDepthSensor);
+		std::thread runner(__VR_runner, &g_CudaDepthSensor, d_blendedImage);
 #endif // VR
 
 

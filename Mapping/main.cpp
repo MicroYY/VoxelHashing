@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 
+
 #include <Eigen\Dense>
 #include <iomanip>
 
@@ -122,12 +123,8 @@ int main()
 	}
 
 	SOCKADDR_IN srvAddr;
-#ifdef SIMULATION
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.198");
-#else
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-#endif // SIMULATION
 
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.100");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -315,7 +312,7 @@ int main()
 			UAV_velocity(2) = heightDist - downThres;
 		}
 		count++;
-		if (count == 1000000)
+		if (count == 10000000)
 		{
 			count = 0;
 			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;

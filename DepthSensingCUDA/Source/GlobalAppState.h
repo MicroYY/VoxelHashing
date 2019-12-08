@@ -122,7 +122,8 @@ public:
 		Sensor_StructureSensor = 7,
 		Sensor_SensorDataReader = 8,
 		Sensor_TCPSensor = 9,
-		Sensor_Mynteye = 10
+		Sensor_Mynteye = 10,
+		Sensor_Local = 11
 	};
 
 #define X(type, name) type name;
