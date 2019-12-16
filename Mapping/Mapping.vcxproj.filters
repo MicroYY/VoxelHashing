@@ -15,7 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="HR.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MFH.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ours.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FP.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

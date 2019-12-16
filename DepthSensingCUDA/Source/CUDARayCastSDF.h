@@ -48,6 +48,14 @@ public:
 		return m_params;
 	}
 
+	//mat4f getIntrinsicsInv() const { return m_params.m_intrinsicsInverse; }
+	//mat4f getIntrinsics() const { return m_rayCastIntrinsics; }
+
+
+	void updateRayCastMinMax(float depthMin, float depthMax) {
+		m_params.m_minDepth = depthMin;
+		m_params.m_maxDepth = depthMax;
+	}
 
 	// debugging
 	void convertToCameraSpace(const DepthCameraData& cameraData);
