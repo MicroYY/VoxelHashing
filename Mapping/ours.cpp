@@ -4,9 +4,7 @@
 #include <iostream>
 #include <thread>
 
-
 #include <Eigen\Dense>
-#include <iomanip>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -123,7 +121,6 @@ int main()
 	}
 
 	SOCKADDR_IN srvAddr;
-
 	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.234");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
@@ -153,7 +150,6 @@ int main()
 	memcpy(tmpPose, pose, bufSize);
 	getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
 	float initYaw = yaw;
-	float initPitch = pitch;
 
 	Eigen::Vector3f initPosition(position_x, position_y, position_z);
 	lastPos = initPosition;
@@ -166,35 +162,9 @@ int main()
 	{
 		memcpy(tmpPose, pose, bufSize);
 		getEulerAngleAndPositionFromHMDPose(tmpPose, roll, pitch, yaw, position_x, position_y, position_z);
-		//#ifdef SIMULATION
-		//		yaw -= initYaw;
-		//		if (yaw < 0.0f)
-		//			yaw += 360.0f;
-		//#else
-		//		yaw -= initYaw;
-		//		if (yaw < 0.0f)
-		//			yaw += 360.0f;
-		//		initYaw = yaw;
-		//#endif // SIMULATION
 		yaw -= initYaw;
-#ifdef SIMULATION
 		if (yaw < 0.0f)
 			yaw += 360.0f;
-
-#else
-		while (yaw < 0.0f)
-		{
-			yaw += 360.0f;
-		}
-		while (yaw > 360.0f)
-		{
-			yaw -= 360.0f;
-		}
-#endif // SIMULATION
-
-		pitch -= initPitch;
-
-
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
 		Eigen::Vector3f relativePosition = currentPosition - initPosition;
 		float positionAngle = atan2(relativePosition(1), relativePosition(0)) * 180.0f / PI;
@@ -272,7 +242,6 @@ int main()
 					UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
 					UAV_velocity(2) = 0.0f;
-					//UAV_velocity = userVelocity;
 #endif // SIMULATION
 					timeCount++;
 				}
@@ -303,19 +272,20 @@ int main()
 
 		if (heightDist > upThres)
 		{
-			userVelocity(2) = (heightDist - upThres) * 2;
-			UAV_velocity(2) = (heightDist - upThres) * 2;
+			userVelocity(2) = (heightDist - upThres) * 2.5;
+			UAV_velocity(2) = (heightDist - upThres) * 2.5;
 		}
 		if (heightDist < downThres)
 		{
-			userVelocity(2) = heightDist - downThres;
-			UAV_velocity(2) = heightDist - downThres;
+			userVelocity(2) = (heightDist - downThres) * 1.5;
+			UAV_velocity(2) = (heightDist - downThres) * 1.5;
 		}
 		count++;
-		if (count == 10000000)
+		if (count == 1000000)
 		{
 			count = 0;
-			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
+			/*
+			std::cout << "Yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
 			std::cout << "Relative position_x: " << relativePosition(0) << std::endl;
@@ -326,6 +296,7 @@ int main()
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;
 			std::cout << userVelocity << std::endl << std::endl;
+			*/
 
 			//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
 			//sendData[3] = (char)yaw; sendData[4] = (char)pitch; sendData[5] = (char)roll;

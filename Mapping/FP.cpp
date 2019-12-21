@@ -14,7 +14,7 @@
 #define FileMapping_NAME "pose"
 
 
-float radius = 0.2f;
+float radius = 0.15f;
 float breakThres = 0.28f;
 float upThres = 0.025f;
 float downThres = -0.05f;
@@ -124,7 +124,7 @@ int main()
 
 	SOCKADDR_IN srvAddr;
 
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.100");
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.234");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -185,7 +185,7 @@ int main()
 
 		//pitch -= initPitch;
 
-		UAV_velocity(0) = 0.2f;
+		UAV_velocity(0) = 0.1f;
 		UAV_velocity(1) = 0.0f;
 		UAV_velocity(2) = 0.0f;
 
@@ -196,34 +196,44 @@ int main()
 		float deltaX = relativePosition(0);
 		if (deltaX >= radius)
 		{
-			UAV_velocity(0) = 0.2f + (deltaX - radius) * 5;
+			UAV_velocity(0) = 0.2f + (deltaX - radius) * 3;
 		}
 
-		if (deltaX <= -radius / 2)
+		if (deltaX <= -radius)
 		{
 			UAV_velocity(0) = 0.0f;
 		}
 
-
-		if (pitch > 45.0f)
-		{
-			pitch = 45.0f;
-		}
-		if (pitch < -45.0f)
-		{
-			pitch = -45.0f;
-		}
-		if (pitch > 0.0f && pitch < 5.0f)
+		
+		if (pitch > 0 && pitch < 15.0f)
 		{
 			pitch = 0;
 		}
-		if (pitch < 0.0f && pitch > -5.0f)
+		else if (pitch >= 15.0f && pitch < 45.0f)
+		{
+			pitch = pitch;
+		}
+		else if (pitch >= 45.0f && pitch <= 90.0f)
+		{
+			pitch = 45.0f;
+		}
+		else if (pitch > 270.0f && pitch <= 315.0f)
+		{
+			pitch = -45.0f;
+		}
+		else if (pitch > 315.0f && pitch <= 345.0f)
+		{
+			pitch = pitch - 360.0f;
+		}
+		else if (pitch > 345.0f)
 		{
 			pitch = 0;
 		}
 
 		UAV_velocity(2) = pitch / 90;
+		
 
+		/*
 		if (roll >= 0.0f && roll < 5.0f)
 		{
 			roll = 0.0f;
@@ -248,10 +258,9 @@ int main()
 				roll = 45.0f;
 			}
 		}
+		*/
 
-
-
-		float yawRate = roll / 5;
+		//float yawRate = roll / 5;
 
 
 		
@@ -259,7 +268,7 @@ int main()
 		if (count == 10000000)
 		{
 			count = 0;
-			std::cout << "yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
+			std::cout << "yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
 			std::cout << "UAV velocity: " << std::endl;
@@ -273,7 +282,7 @@ int main()
 		//sendData[0] = 1; sendData[1] = 2; sendData[2] = 3;
 
 		//send(clientSocket, (char*)sendData, sizeof(float) * 6, 0);
-		short yaw0 = short(yawRate * 100.0);
+		short yaw0 = short(yaw * 100.0);
 		short pitch0 = short(pitch * 100.0);
 		short roll0 = short(roll * 100.0);
 		short vx = short(UAV_velocity(0) * 100.0) + 500;

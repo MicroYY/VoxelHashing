@@ -124,7 +124,7 @@ int main()
 
 	SOCKADDR_IN srvAddr;
 
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.100");
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.234");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -197,28 +197,30 @@ int main()
 
 		//float pitchDif = pitch;
 
-		if (pitch > 45.0f)
-		{
-			pitch = 45.0f;
-		}
-		if (pitch < -45.0f)
-		{
-			pitch = -45.0f;
-		}
-		if (pitch > 0.0f && pitch < 5.0f)
+		
+		if (pitch > 0.0f && pitch < 15.0f)
 		{
 			pitch = 0;
 		}
-		if (pitch < 0.0f && pitch > -5.0f)
+		if (pitch >345.0f && pitch <360.0f)
 		{
 			pitch = 0;
+		}
+		if (pitch > 0 && pitch <= 45.0f)
+		{
+			pitch = -pitch;
+		}
+		if (pitch > 180 && pitch)
+		{
+			pitch = 360.0f - pitch;
 		}
 
-		if (roll >= 0.0f && roll < 5.0f)
+
+		if (roll >= 0.0f && roll < 15.0f)
 		{
 			roll = 0.0f;
 		}
-		if (roll > 355.0f)
+		if (roll > 345.0f)
 		{
 			roll = 0.0f;
 		}
@@ -241,11 +243,39 @@ int main()
 
 
 
-		UAV_velocity(0) = pitch / 90;
-		UAV_velocity(1) = roll / 90;
+		UAV_velocity(0) = pitch / 120;
+		UAV_velocity(1) = roll / 120;
 		UAV_velocity(2) = 0.0f;
 
+		/*
+		float yawRate;
+		yawRate = yaw;
+		if (yawRate > 0.0f && yawRate < 5.0f)
+		{
+			yawRate = 0.0f;
+		}
+		
+		if (yawRate > 45.0f && yawRate <= 180.0f)
+		{
+			yawRate = 45.0f;
+		}
 
+		if (yawRate > 180.0f && yawRate <= 315.0f)
+		{
+			yawRate = -45.0f;
+		}
+		if (yawRate > 315.0f && yawRate <= 355.0f)
+		{
+			yawRate = yawRate - 360.0f;
+		}
+
+		if (yawRate > 355.0f && yawRate < 360.0f)
+		{
+			yawRate = 0.0f;
+		}
+		yawRate = -yawRate;
+		*/
+		
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
 		
 		float heightDist = currentPosition(2) - initPosition(2);
@@ -254,19 +284,19 @@ int main()
 
 		if (heightDist > upThres)
 		{
-			userVelocity(2) = (heightDist - upThres) * 2;
-			UAV_velocity(2) = (heightDist - upThres) * 2;
+			userVelocity(2) = (heightDist - upThres) * 2.5;
+			UAV_velocity(2) = (heightDist - upThres) * 2.5;
 		}
 		if (heightDist < downThres)
 		{
-			userVelocity(2) = heightDist - downThres;
-			UAV_velocity(2) = heightDist - downThres;
+			userVelocity(2) = (heightDist - downThres) * 1.5;
+			UAV_velocity(2) = (heightDist - downThres) * 1.5;
 		}
 		count++;
 		if (count == 10000000)
 		{
 			count = 0;
-			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
+			std::cout << "yawRate: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
 			std::cout << "UAV velocity: " << std::endl;

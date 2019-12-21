@@ -25,7 +25,7 @@ Eigen::Vector3f lastPos(0.0f, 0.0f, 0.0f);
 Eigen::Vector3f accumDis(0.0f, 0.0f, 0.0f);
 Eigen::Vector3f UAV_velocity(0.0f, 0.0f, 0.0f);
 Eigen::Vector3f userVelocity(0.0f, 0.0f, 0.0f);
-float ss = 0.6f;
+float ss = 0.2f;
 
 char sendData[12];
 SOCKET clientSocket;
@@ -125,7 +125,7 @@ int main()
 
 	SOCKADDR_IN srvAddr;
 
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.100");
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.234");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -250,13 +250,9 @@ int main()
 		if (count == 10000000)
 		{
 			count = 0;
-			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
+			std::cout << "Yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
-			std::cout << "Relative position_x: " << relativePosition(0) << std::endl;
-			std::cout << "Relative position_y: " << relativePosition(1) << std::endl;
-			std::cout << "Relative position_z: " << relativePosition(2) << std::endl;
-			std::cout << "Position angle: " << positionAngle << std::endl;
 			std::cout << "UAV velocity: " << std::endl;
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;

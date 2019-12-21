@@ -125,7 +125,7 @@ int main()
 
 	SOCKADDR_IN srvAddr;
 
-	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.100");
+	srvAddr.sin_addr.S_un.S_addr = inet_addr("192.168.1.234");
 	srvAddr.sin_family = AF_INET;
 	srvAddr.sin_port = htons(1234);
 
@@ -216,43 +216,45 @@ int main()
 		userVelocity(1) = 0.0f;
 		userVelocity(2) = 0.0f;
 
-		float yawRate = yaw / 5;
+		//float yawRate = yaw / 5;
+		
 		if (dist > radius)
 		{
 			float x0 = radius * relativePosition(0) / dist;
 			float y0 = radius * relativePosition(1) / dist;
 			userVelocity(0) = (relativePosition(0) - x0) * 0.5f;
 			userVelocity(1) = (relativePosition(1) - y0) * 0.5f;
-			float s = sqrt(userVelocity(0) * userVelocity(0) + userVelocity(1) * userVelocity(1));
-			userVelocity(0) = userVelocity(0) * ss / s;
-			userVelocity(1) = userVelocity(1) * ss / s;
-#ifdef SIMULATION
+
+			//float s = sqrt(userVelocity(0) * userVelocity(0) + userVelocity(1) * userVelocity(1));
+			//userVelocity(0) = userVelocity(0) * ss / s;
+			//userVelocity(1) = userVelocity(1) * ss / s;
+
+
 			UAV_velocity = userVelocity;
-#else
-			UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
-			UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
-			UAV_velocity(2) = 0.0f;
-#endif // SIMULATION
+
+			//UAV_velocity(0) = (dist - radius) * cos((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+			//UAV_velocity(1) = (dist - radius) * sin((yaw - positionAngle) / 180.0f * PI) * 0.5f;
+			//UAV_velocity(2) = 0.0f;
 
 
-			
 		}
 
 		if (heightDist > upThres)
 		{
-			userVelocity(2) = (heightDist - upThres) * 2;
-			UAV_velocity(2) = (heightDist - upThres) * 2;
+			userVelocity(2) = (heightDist - upThres) * 2.5;
+			UAV_velocity(2) = (heightDist - upThres) * 2.5;
 		}
 		if (heightDist < downThres)
 		{
-			userVelocity(2) = heightDist - downThres;
-			UAV_velocity(2) = heightDist - downThres;
+			userVelocity(2) = (heightDist - downThres) * 1.5;
+			UAV_velocity(2) = (heightDist - downThres) * 1.5;
 		}
 
 		count++;
 		if (count == 10000000)
 		{
 			count = 0;
+			/*
 			std::cout << "Yaw: " << yaw << std::setw(4) << "        Pitch: " << pitch << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
@@ -264,11 +266,12 @@ int main()
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;
 			std::cout << userVelocity << std::endl << std::endl;
+			*/
 
 			//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
 			//sendData[3] = (char)yaw; sendData[4] = (char)pitch; sendData[5] = (char)roll;
 		}
-		short yaw0 = short(yawRate * 100.0);
+		short yaw0 = short(yaw * 100.0);
 		short pitch0 = short(pitch * 100.0);
 		short roll0 = short(roll * 100.0);
 		short vx = short(UAV_velocity(0) * 100.0) + 500;

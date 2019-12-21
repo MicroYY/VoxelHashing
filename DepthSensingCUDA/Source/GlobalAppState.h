@@ -98,6 +98,13 @@
 	X(bool, s_reconstructionEnabled) \
 	X(bool, s_renderToFile) \
 	X(std::string, s_renderToFileDir) \
+	X(bool, s_generateVideo) \
+	X(std::string, s_generateVideoDir) \
+	X(std::string, s_printTimingsDirectory) \
+	X(std::string, s_printConvergenceFile) \
+	X(mat4f, s_topVideoTransformWorld) \
+	X(vec4f, s_topVideoCameraPose) \
+	X(vec2f, s_topVideoMinMax) \
 	X(bool, s_offlineProcessing)
 
 
