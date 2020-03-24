@@ -1798,10 +1798,10 @@ __global__ void colorWithPointCloudRayCastDevice(uchar4* d_output, const uchar4*
 			//	d_output[index].w = d_input1[index].w;
 			//	//return;
 			//}
-		float f = (depth - 0.4) / 3.6 * 1.0;
-		d_output[index].x = d_input2[index].x * 0.5 * 255.0 + d_input1[index].x * 0.5;
-		d_output[index].y = d_input2[index].y * 0.5 * 255.0 + d_input1[index].y * 0.5;
-		d_output[index].z = d_input2[index].z * 0.5 * 255.0 + d_input1[index].z * 0.5;
+		//float f = (depth - 0.4) / 19.6 * 1.0;
+		d_output[index].x = d_input2[index].x * 0.4 * 255.0 + d_input1[index].x * 0.6;
+		d_output[index].y = d_input2[index].y * 0.4 * 255.0 + d_input1[index].y * 0.6;
+		d_output[index].z = d_input2[index].z * 0.4 * 255.0 + d_input1[index].z * 0.6;
 		d_output[index].w = d_input1[index].w;
 	}
 

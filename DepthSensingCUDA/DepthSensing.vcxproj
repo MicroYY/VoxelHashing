@@ -43,6 +43,7 @@
     <Import Project="..\..\..\Props\glew-1.12.0.props" />
     <Import Project="..\..\..\Props\mynteyed-release.props" />
     <Import Project="..\..\..\Props\sdl_ttf-2.0.15.props" />
+    <Import Project="..\..\..\Props\Kinect.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />

@@ -197,23 +197,36 @@ int main()
 
 		//float pitchDif = pitch;
 
-		
-		if (pitch > 0.0f && pitch < 15.0f)
+
+		if (pitch >= 0.0f && pitch < 15.0f)
 		{
 			pitch = 0;
 		}
-		if (pitch >345.0f && pitch <360.0f)
-		{
-			pitch = 0;
-		}
-		if (pitch > 0 && pitch <= 45.0f)
+		else if (pitch >= 15.0f && pitch < 45.0f)
 		{
 			pitch = -pitch;
 		}
-		if (pitch > 180 && pitch)
+		else if (pitch >= 45.0f && pitch <= 90.0f)
+		{
+			pitch = -45.0f;
+		}
+		else if (pitch <= 360.0f && pitch > 345.0f )
+		{
+			pitch = 0;
+		}
+		else if (pitch <= 345.0f && pitch > 315.0f)
 		{
 			pitch = 360.0f - pitch;
 		}
+		else if(pitch <= 315.0f && pitch >=270.0f)
+		{
+			pitch = 45.0f;
+		}
+		else 
+		{
+			pitch = 0.0f;
+		}
+		
 
 
 		if (roll >= 0.0f && roll < 15.0f)
@@ -243,8 +256,8 @@ int main()
 
 
 
-		UAV_velocity(0) = pitch / 120;
-		UAV_velocity(1) = roll / 120;
+		UAV_velocity(0) = pitch / 120 * cos(yaw / 180.0f * PI) - roll / 120 * sin(yaw / 180.0f * PI);
+		UAV_velocity(1) = pitch / 120 * sin(yaw / 180.0f * PI) + roll / 120 * cos(yaw / 180.0f * PI);
 		UAV_velocity(2) = 0.0f;
 
 		/*
@@ -254,7 +267,7 @@ int main()
 		{
 			yawRate = 0.0f;
 		}
-		
+
 		if (yawRate > 45.0f && yawRate <= 180.0f)
 		{
 			yawRate = 45.0f;
@@ -275,12 +288,12 @@ int main()
 		}
 		yawRate = -yawRate;
 		*/
-		
+
 		Eigen::Vector3f currentPosition(position_x, position_y, position_z);
-		
+
 		float heightDist = currentPosition(2) - initPosition(2);
 		//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
-		
+
 
 		if (heightDist > upThres)
 		{
@@ -293,9 +306,16 @@ int main()
 			UAV_velocity(2) = (heightDist - downThres) * 1.5;
 		}
 		count++;
+
+		if (fabs(pitch - 0) >= 1e-6)
+		{
+			userVelocity(2) = 0.0f;
+			UAV_velocity(2) = 0.0f;
+		}
 		if (count == 10000000)
 		{
 			count = 0;
+			/*=
 			std::cout << "yawRate: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
@@ -303,6 +323,7 @@ int main()
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;
 			std::cout << userVelocity << std::endl << std::endl;
+			*/
 
 			//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
 			//sendData[3] = (char)yaw; sendData[4] = (char)pitch; sendData[5] = (char)roll;

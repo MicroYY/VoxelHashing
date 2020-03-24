@@ -422,10 +422,6 @@ void CALLBACK OnKeyboard(UINT nChar, bool bKeyDown, bool bAltDown, void* pUserCo
 			//BlendPointCloud();
 			GlobalAppState::get().s_RenderMode = 7;
 			break;
-			//GlobalAppState::get().s_RenderMode = 7;
-			break;
-			//case '8':
-			//GlobalAppState::get().s_RenderMode = 8;
 		case '8':
 		{
 			if (GlobalAppState::getInstance().s_recordData) {
@@ -735,6 +731,8 @@ void visualizeFrame(ID3D11DeviceContext* pd3dImmediateContext, ID3D11Device* pd3
 	else if (GlobalAppState::get().s_RenderMode == 1)
 	{
 		//default render mode
+		//g_sceneRep->setLastRigidTransformAndCompactify(fixedRenderTransform, g_CudaDepthSensor.getDepthCameraData());
+		g_rayCast->render(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_CudaDepthSensor.getDepthCameraData(), fixedRenderTransform);
 
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
 
@@ -782,31 +780,18 @@ void visualizeFrame(ID3D11DeviceContext* pd3dImmediateContext, ID3D11Device* pd3
 		DX11QuadDrawer::RenderQuad(pd3dImmediateContext, DX11PhongLighting::GetColorsSRV(), 1.0f);
 	}
 	else if (GlobalAppState::get().s_RenderMode == 6) {
-		const vec2f viewRange = GlobalAppState::get().s_topVideoMinMax;
-		const vec4f pose = GlobalAppState::get().s_topVideoCameraPose;
-		//mat4f transform = mat4f::translation(pose[1], pose[2], pose[3]) * mat4f::rotationZ(pose[0]);
-		mat4f transform = fixedRenderTransform;
-		//g_rayCast->updateRayCastMinMax(0.4f, 400.0f);
+	}
+	else if (GlobalAppState::get().s_RenderMode == 7) {//default render mode
 		const mat4f& renderIntrinsics = g_RGBDAdapter.getColorIntrinsics();
-		g_sceneRep->setLastRigidTransformAndCompactify(transform, g_CudaDepthSensor.getDepthCameraData());
-		unsigned int numOccupiedBlocks = g_sceneRep->getHashParams().m_numOccupiedBlocks;
-		if (g_sceneRep->getHashParams().m_numOccupiedBlocks == 0) {
-			std::cout << "ERROR nothing in the scene!" << std::endl;
-			getchar();
-		}
-		
-		g_rayCast->render(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_CudaDepthSensor.getDepthCameraData(), transform);
-
 
 		//always render, irrespective whether there is a new depth frame available
 		g_CustomRenderTarget.Clear(pd3dImmediateContext);
 		g_CustomRenderTarget.Bind(pd3dImmediateContext);
 		g_RGBDRenderer.RenderDepthMap(pd3dImmediateContext, g_rayCast->getRayCastData().d_depth, g_rayCast->getRayCastData().d_colors, g_rayCast->getRayCastParams().m_width, g_rayCast->getRayCastParams().m_height, MatrixConversion::toMlib(g_rayCast->getRayCastParams().m_intrinsicsInverse), view, renderIntrinsics, g_CustomRenderTarget.getWidth(), g_CustomRenderTarget.getHeight(), GlobalAppState::get().s_renderingDepthDiscontinuityThresOffset, GlobalAppState::get().s_renderingDepthDiscontinuityThresLin);
 		g_CustomRenderTarget.Unbind(pd3dImmediateContext);
+
 		DX11PhongLighting::render(pd3dImmediateContext, g_CustomRenderTarget.GetSRV(1), g_CustomRenderTarget.GetSRV(2), g_CustomRenderTarget.GetSRV(3), GlobalAppState::get().s_useColorForRendering, g_CustomRenderTarget.getWidth(), g_CustomRenderTarget.getHeight());
 		DX11QuadDrawer::RenderQuad(pd3dImmediateContext, DX11PhongLighting::GetColorsSRV(), 1.0f);
-	}
-	else if (GlobalAppState::get().s_RenderMode == 7) {
 	}
 	else if (GlobalAppState::get().s_RenderMode == 8) {
 	}
@@ -866,7 +851,7 @@ void reconstruction()
 			g_sceneRep->setLastRigidTransformAndCompactify(renderTransform, g_CudaDepthSensor.getDepthCameraData());
 			//TODO if this is enabled there is a problem with the ray interval splatting
 		}
-
+		g_sceneRep->setLastRigidTransformAndCompactify(renderTransform, g_CudaDepthSensor.getDepthCameraData());
 		g_rayCast->render(g_sceneRep->getHashData(), g_sceneRep->getHashParams(), g_CudaDepthSensor.getDepthCameraData(), renderTransform);
 
 		if (GlobalAppState::get().s_sensorIdx == GlobalAppState::Sensor_NetworkSensor)
@@ -990,7 +975,7 @@ void reconstruction()
 		}
 	}
 	else {
-		//transformation = sensor->getRigidTransform();
+		transformation = sensor->getRigidTransform();
 		//fixedRenderTransform = transformation; 
 		//renderTransform[7] -= 25.0f;
 		//std::cout << transformation << std::endl;
@@ -1000,6 +985,11 @@ void reconstruction()
 		//fixedRenderTransform[4] = 0.000459748; fixedRenderTransform[5] = 0.999983;     fixedRenderTransform[6] = -0.00581484; fixedRenderTransform[7] = -5.84727;
 		//fixedRenderTransform[8] = 0.998246;    fixedRenderTransform[9] = -0.000803198; fixedRenderTransform[10] = -0.0592009; fixedRenderTransform[11] = 5.35126;
 		//fixedRenderTransform[12] = 0;          fixedRenderTransform[13] = 0;           fixedRenderTransform[14] = 0;          fixedRenderTransform[15] = 1;
+	
+		fixedRenderTransform[0] = 0.633; fixedRenderTransform[1] = 0.178; fixedRenderTransform[2] = -0.753; fixedRenderTransform[3] = 1.099;
+		fixedRenderTransform[4] = 0.000; fixedRenderTransform[5] = 0.974; fixedRenderTransform[6] = 0.226; fixedRenderTransform[7] = -3.444;
+		fixedRenderTransform[8] = 0.774; fixedRenderTransform[9] = -0.143; fixedRenderTransform[10] = 0.617; fixedRenderTransform[11] = -4.098;
+		fixedRenderTransform[12] = 0; fixedRenderTransform[13] = 0; fixedRenderTransform[14] = 0; fixedRenderTransform[15] = 1;
 	}
 
 	if (GlobalAppState::getInstance().s_recordData) {
@@ -1159,14 +1149,14 @@ void CALLBACK OnD3D11FrameRender(ID3D11Device* pd3dDevice, ID3D11DeviceContext* 
 		uchar4* h_image = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
 		cudaMemcpy(d_image, h_image, sizeof(uchar4) * 640 * 480, cudaMemcpyHostToDevice);
 		float* rayCastedDepth = g_rayCast->getRayCastData().d_depth;
-		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, 0.4f, 4.0f);
+		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, GlobalAppState::get().s_sensorDepthMin, GlobalAppState::get().s_sensorDepthMax);
 		colorWithPointCloudRayCast(d_blendedImage, d_image, d_dataFloat4, 640, 480);
 		cudaMemcpy(d_lastImage, d_image, sizeof(uchar4) * 640 * 480, cudaMemcpyDeviceToDevice);
 	}
 	else if (g_RGBDAdapter.getFrameNumber() > 1)
 	{
 		float* rayCastedDepth = g_rayCast->getRayCastData().d_depth;
-		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, 0.4f, 4.0f);
+		depthToHSV(d_dataFloat4, rayCastedDepth, 640, 480, GlobalAppState::get().s_sensorDepthMin, GlobalAppState::get().s_sensorDepthMax);
 		colorWithPointCloudRayCast(d_blendedImage, d_lastImage, d_dataFloat4, 640, 480);
 		uchar4* h_image = (uchar4*)g_RGBDAdapter.getRGBDSensor()->getColorRGBX();
 		cudaMemcpy(d_lastImage, h_image, sizeof(uchar4) * 640 * 480, cudaMemcpyHostToDevice);

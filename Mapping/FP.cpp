@@ -268,6 +268,7 @@ int main()
 		if (count == 10000000)
 		{
 			count = 0;
+			/*
 			std::cout << "yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
@@ -275,6 +276,7 @@ int main()
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;
 			std::cout << userVelocity << std::endl << std::endl;
+			*/
 
 		}
 		//sendData[0] = UAV_velocity(0); sendData[1] = UAV_velocity(1); sendData[2] = UAV_velocity(2);

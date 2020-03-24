@@ -9,7 +9,7 @@ s_windowHeight = 480;		//render window height
 s_adapterWidth = 640;		//input depth gets re-sampled to this width
 s_adapterHeight = 480;		//input depth gets re-sampled to this height
 
-s_sensorDepthMax = 20.0f;	//maximum sensor depth in meter
+s_sensorDepthMax = 10.0f;	//maximum sensor depth in meter
 s_sensorDepthMin = 0.4f;	//minimum sensor depth in meter
 
 // cropping options for PrimeSense & Asus Xtion Pro
@@ -24,7 +24,7 @@ s_SDFVoxelSize = 0.010f;				//voxel size in meter
 s_SDFMarchingCubeThreshFactor = 10.0f;	//marching cube thresh: s_SDFMarchingCubeThresh = s_SDFMarchingCubeThreshFactor*s_SDFVoxelSize
 s_SDFTruncation = 0.06f;				//truncation in meter (5.0f*s_SDFVoxelSize )
 s_SDFTruncationScale = 0.02f;			//truncation scale in meter per meter (2.5f*s_SDFVoxelSize )
-s_SDFMaxIntegrationDistance = 6.0f;		//maximum integration in meter
+s_SDFMaxIntegrationDistance = 8.0f;		//maximum integration in meter
 s_SDFIntegrationWeightSample = 3;		//weight for an integrated depth value
 s_SDFIntegrationWeightMax = 255;		//maximum integration weight for a voxel
 // s_SDFBlockSize is pound defined (SDF_BLOCK_SIZE)
@@ -72,14 +72,14 @@ s_materialSpecular 		= 1.0f 1.0f 1.0f 1.0f;
 s_lightAmbient 			= 0.4f 0.4f 0.4f 1.0f;
 s_lightDiffuse 			= 0.6f 0.52944f 0.4566f 0.6f;
 s_lightSpecular 		= 0.3f 0.3f 0.3f 1.0f;
-s_lightDirection 		= 0.0f -100.0f 200.0f;
+s_lightDirection 		= 0.0f -1.0f 2.0f;
 
-s_RenderMode = 1;
+s_RenderMode = 7;
 
 s_useColorForRendering = false;
 s_playData = true;
 
-s_renderingDepthDiscontinuityThresOffset = 0.012f;	// discontinuity offset in meter
+s_renderingDepthDiscontinuityThresOffset = 0.500f;	// discontinuity offset in meter
 s_renderingDepthDiscontinuityThresLin	 = 0.001f;	// additional discontinuity threshold per meter
 s_remappingDepthDiscontinuityThresOffset = 0.012f;	// discontinuity offset in meter
 s_remappingDepthDiscontinuityThresLin	 = 0.016f;	// additional discontinuity threshold per meter

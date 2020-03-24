@@ -250,6 +250,7 @@ int main()
 		if (count == 10000000)
 		{
 			count = 0;
+			/*
 			std::cout << "Yaw: " << yaw << std::endl;
 			std::cout << "Pitch: " << pitch << std::endl;
 			std::cout << "Roll: " << roll << std::endl;
@@ -257,6 +258,7 @@ int main()
 			std::cout << UAV_velocity << std::endl;
 			std::cout << "User velocity: " << std::endl;
 			std::cout << userVelocity << std::endl << std::endl;
+			*/
 
 			//std::cout << heightDist << " " << currentPosition(2) << " " << initPosition(2) << std::endl;
 			//sendData[3] = (char)yaw; sendData[4] = (char)pitch; sendData[5] = (char)roll;

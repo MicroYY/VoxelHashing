@@ -30,15 +30,8 @@ public:
 		return "TCPSensor";
 	}
 
-	void imgStreamCap();
 
-	void startThread() {
-		start = true;
-	}
 
-	bool isStart() {
-		return start;
-	}
 
 	const unsigned int getFrameNum() {
 		return frameNum;
@@ -77,7 +70,6 @@ private:
 
 	unsigned int frameNum;
 
-	bool start;
 	std::mutex mtx;
 
 	cv::Mat image;
@@ -88,6 +80,10 @@ private:
 	char* recvPose;
 
 	float initPose[7];
+
+	bool start;
+	double distance;
+	vec3d lastTranslation;
 };
 
 

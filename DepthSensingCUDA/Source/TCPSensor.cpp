@@ -64,10 +64,13 @@ TCPSensor::TCPSensor()
 	recvImgDepth = (uchar*)recvImg + bufSize / 2;
 
 	frameNum = 0;
-	start = false;
 	image = cv::Mat(960, 640, CV_8UC3);
 	recvPose = (char*)malloc(sizeof(unsigned char) * 28);
 #endif // 720P
+
+	start = false;
+	distance = 0;
+	lastTranslation[0] = 0; lastTranslation[1] = 0; lastTranslation[2] = 0;
 }
 
 TCPSensor::~TCPSensor()
@@ -143,7 +146,19 @@ HRESULT TCPSensor::processDepth()
 		iRet += recv(clientSocket, &recvPose[iRet], 56 - iRet, 0);
 	}
 	RT = (double*)recvPose;
+	
+	if (!start)
+	{
+		lastTranslation[0] = RT[4];
+		lastTranslation[1] = RT[5];
+		lastTranslation[2] = RT[6];
+		start = true;
+	}
 
+	vec3d now; now[0] = RT[4]; now[1] = RT[5]; now[2] = RT[6];
+	distance += dist(now, lastTranslation);
+	lastTranslation[0] = RT[4]; lastTranslation[1] = RT[5]; lastTranslation[2] = RT[6];
+	//std::cout << "distance: " << distance << std::endl;
 	//RT[0] = 0.00227350672146; 
 	//RT[1] = -0.00182679011275;
 	//RT[2] = 0.727734215711; 
@@ -222,9 +237,7 @@ HRESULT TCPSensor::processDepth()
 	m_rigidTransform._m32 = 0;
 	m_rigidTransform._m33 = 1;
 
-
-	//m_rigidTransform = i * m_rigidTransform;
-	//std::cout << m_rigidTransform << std::endl;
+	//std::cout << m_rigidTransform << "\n";
 #endif // TCP_WITH_POSE
 
 
